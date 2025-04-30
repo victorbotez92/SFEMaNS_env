@@ -1,0 +1,3 @@
+TODO:
+
+-optimize fourier_to_phys (replace for loop by numpy arrays)
