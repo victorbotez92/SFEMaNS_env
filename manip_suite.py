@@ -83,12 +83,12 @@ def fourier_to_phys(sfem_par,field_in,MF_in=[],MF_max=-1,shift=0): #requires "fo
 
     else:
         nb_mF = len(MF_in)
-    try:
-        assert nb_mF == shape_field[1]//2
-    except AssertionError:
-        raise IndexError("MF_in must match second dimension of field_in")
+    # try:
+    #     assert nb_mF == shape_field[1]//2
+    # except AssertionError:
+    #     raise IndexError("MF_in must match second dimension of field_in")
 
-    field_out = np.zeros((D, 2*nb_mF-1, N))
+    field_out = np.zeros((D, 2*MF_max-1, N))
     for num_mF,mF in enumerate(MF_in):
         if num_mF%10 == 0:
             print(f"Doing {num_mF} out of {len(MF_in)}")
