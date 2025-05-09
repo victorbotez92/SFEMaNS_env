@@ -1,7 +1,7 @@
 import numpy as np
 
 from einops import rearrange,repeat
-import sys,os,array
+import os
 from pathlib import Path
 
 
@@ -63,12 +63,12 @@ def include_suite(sfem_par,opt_path_suite,list_extensions,opt_start,opt_I,suite_
 
     return sfem_par
 
-def SFEMaNS_par(path_to_mesh,opt_path_binaries_out='',opt_path_suite=''):
+def SFEMaNS_par(path_to_mesh,opt_path_binaries_out='',opt_path_suite='',field=None):
 
-    print("Type in the field you're interested in: ")
 
 #=============Defining field
-    field = input()
+    if field is None:
+        field = input("Type in the field you're interested in: ")
 
     try:
         mesh_type = dict_mesh_type[field]

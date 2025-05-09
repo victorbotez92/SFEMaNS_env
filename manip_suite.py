@@ -62,7 +62,7 @@ def contrib_IFT(fourier_data, mF, a, MF, shift=0):
     new_contrib = repeat(fourier_data,'d n -> d t n',t = len(trigo))*repeat(trigo,'t -> d t n', d=np.shape(fourier_data)[0], n = np.shape(fourier_data)[1])
     return new_contrib
 
-def fourier_to_phys(sfem_par,field_in,MF_in=[],MF_max=-1,shift=0): #requires "fourier" format (D (MF a) N), outputs "phys" format (D theta N)
+def fourier_to_phys(sfem_par,field_in,MF_in=[],MF_max=-1,shift=0,use_num_mF=True): #requires "fourier" format (D (MF a) N), outputs "phys" format (D theta N)
     shape_field = np.shape(field_in)
     D = shape_field[0]
     N = shape_field[2]
@@ -95,7 +95,11 @@ def fourier_to_phys(sfem_par,field_in,MF_in=[],MF_max=-1,shift=0): #requires "fo
         for a in range(2):
             if mF == 0 and a == 1:
                 continue
-            new_contrib = contrib_IFT(field_in[:, a+2*num_mF, :], mF, a, MF_max,shift=shift)
+            if use_num_mF:
+                index = num_mF
+            else:
+                index = mF
+            new_contrib = contrib_IFT(field_in[:, a+2*index, :], mF, a, MF_max,shift=shift)
             field_out[:, :, :] += new_contrib
     
     return field_out
@@ -272,7 +276,7 @@ def interpol_sfemans_to_sfemans(sfem_par,field,new_R_sfem,new_Z_sfem,method='cub
     if len(shape_field) == 3:
         azimuth = shape_field[1]
         D = shape_field[0]
-        new_field = np.empty((D,azimuth,len(R_linspace),len(Z_linspace)))
+        new_field = np.empty((D,azimuth,len(new_R_sfem)))
     elif len(shape_field) == 4:
         azimuth = shape_field[2]
         D = shape_field[1]

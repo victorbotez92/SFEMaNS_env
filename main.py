@@ -5,22 +5,10 @@ from manip_suite import *
 
 
 def intro_sfemans():
-    # print('Welcome to the SFEMaNS environment for python post-processing.')
-    # print('=========Getting started=========')
-    # print('You should define once and for all the following variables: ')
-    # print('S: Number of meridonal sections')
-    # print('D: Dimension of the field')
-    # print('field: Name your field within the following possibilities: ')
-    # print('    u, p, H, B, phi...')
-    # print('path_to_mesh: path containing the vvrr, Hrr, etc...')
-    # print('mesh_ext: the name of your mesh (should be like .MHD_RECT_80_40_H_2R_1_sym.FEM for instance)')
-    # print('MF: the number of Fourier modes you would like to consider (can be smaller than the actual MF used for computations through SFEMaNS)')
-    # print()
-    # print('   ')
     print('=========Importing data=========')
     # print('Functions to import data from binaries or directly from SFEMaNS suites are defined within get_data.py')
     print()
-    print('SFEMaNS_par(path_to_binaries_out)')
+    print('SFEMaNS_par(path_to_mesh,opt_path_binaries_out='',opt_path_suite='',field=None)')
     print('get_suite(par,I=[],MF=[],fourier_type=["c","s"],opt_extension='',record_stack_lenght=7, get_gauss_points=True,stack_domains=True)')
     print('#output shape is (I MF D a N)')
     print('')
