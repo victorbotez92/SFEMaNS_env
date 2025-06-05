@@ -10,18 +10,22 @@ dict_mesh_type = {
     'p':'pp',
     'B':'H',
     'H':'H',
-    'phi':'phi'}
+    'phi':'phi',
+    'mu_H':'H',
+    'mu':'H'}
 
 dict_dimension = {
     'u':3,
     'p':1,
     'B':3,
     'H':3,
-    'phi':1}
+    'phi':1,
+    'mu_H':1,
+    'mu':1}
 
 class class_SFEMaNS:
     # def __init__(self,S,D,field,MF,I,I_min,I_freq,path_to_suite,path_to_mesh,mesh_ext,phys,fourier,fourier_per_mode):
-    def __init__(self,S,D,field,path_to_suite,path_to_mesh,mesh_ext):
+    def __init__(self,S,D,field,path_to_suite,path_to_mesh,mesh_ext,mesh_type):
 
         self.S = S
         self.D = D
@@ -34,8 +38,8 @@ class class_SFEMaNS:
         self.path_to_mesh = path_to_mesh
         self.mesh_ext = mesh_ext
 
-        self.mesh_type = dict_mesh_type[field]
-
+        # self.mesh_type = dict_mesh_type[field]
+        self.mesh_type = mesh_type
         # self.phys = phys
         # self.fourier = fourier
         # self.fourier_per_mode = fourier_per_mode
@@ -72,28 +76,33 @@ def SFEMaNS_par(path_to_mesh,opt_path_binaries_out='',opt_path_suite='',field=No
 
     try:
         mesh_type = dict_mesh_type[field]
-    except NameError:
-        raise NameError("The field you typed does not exist, make sure you haven't made a mistake or manually add it to the library")
-    if not os.path.exists(path_to_mesh+f'/{field}/') and opt_path_binaries_out=='' and opt_path_suite=='':
+    #===============Defining D
+        D = dict_dimension[field]
+    except KeyError:
+        mesh_type = input("Mesh type among H, phi, vv, pp:")
+        if not mesh_type in dict_mesh_type.values():
+            raise NameError("The mesh_type you typed does not exist, make sure you haven't made a mistake or manually add it to the library")
+        D = int(input("Dimension of the field"))
+    if not os.path.exists(path_to_mesh) and opt_path_binaries_out=='' and opt_path_suite=='':
         print("WARNING: You consider neither binaries nor suites.")
 
 #============Defining path to binaries
     if opt_path_binaries_out != '':
         no_bins = False
-        path_to_suite = opt_path_binaries_out+f'/{field}/'
+        path_to_suite = opt_path_binaries_out#+f'/{field}/'
 
     else:
-        if not os.path.exists(path_to_mesh+f'/{field}/'):
+        if not os.path.exists(path_to_mesh):
             no_bins = True
         else:
             no_bins = False
-        path_to_suite = path_to_mesh+f'/{field}/'
+        path_to_suite = path_to_mesh
 
-#===============Defining D
-    D = dict_dimension[field]
+
 
 #===============Making sure meshes exist
-    mesh_type = dict_mesh_type[field]
+    # assert mesh_type in dict_mesh_type.values()
+
     directory = Path(path_to_mesh)
     search_string = f"{mesh_type}rr_"
 
@@ -122,7 +131,7 @@ def SFEMaNS_par(path_to_mesh,opt_path_binaries_out='',opt_path_suite='',field=No
     S = max(list_s) + 1
 
 #===============Defining SFEMaNS object
-    out = class_SFEMaNS(S,D,field,path_to_suite,path_to_mesh,mesh_ext)
+    out = class_SFEMaNS(S,D,field,path_to_suite,path_to_mesh,mesh_ext,mesh_type)
 
     # if no_bins:
     #     phys = False
@@ -147,6 +156,7 @@ def SFEMaNS_par(path_to_mesh,opt_path_binaries_out='',opt_path_suite='',field=No
     #===============Defining fourier
         fourier = len([file.name for file in Path(f"{path_to_suite}/").iterdir() if ((search_string_1 in file.name) and (search_string_2 in file.name))])>0
 
+        I_min, I_freq, I, MF = None, None, None, None
     #===============Defining I
         if phys:
             search_string = "phys"

@@ -62,27 +62,32 @@ def contrib_IFT(fourier_data, mF, a, MF, shift=0):
     new_contrib = repeat(fourier_data,'d n -> d t n',t = len(trigo))*repeat(trigo,'t -> d t n', d=np.shape(fourier_data)[0], n = np.shape(fourier_data)[1])
     return new_contrib
 
-def fourier_to_phys(sfem_par,field_in,MF_in=[],MF_max=-1,shift=0,use_num_mF=True): #requires "fourier" format (D (MF a) N), outputs "phys" format (D theta N)
+def fourier_to_phys(sfem_par,field_in,MF_in=None,MF_max=None,shift=0,use_num_mF=True): #requires "fourier" format (D (MF a) N), outputs "phys" format (D theta N)
     shape_field = np.shape(field_in)
     D = shape_field[0]
     N = shape_field[2]
 
-    if MF_max == -1:
+    if MF_max is None:
         MF_max = sfem_par.MF
         print(f'WARNING: you did not select MF_max, setting it to {sfem_par.MF} by default')
+
+    if MF_in is None:
+        MF_in = np.arange(MF_max)
+        print(f'WARNING: you did not select MF_in, setting it to arange({MF_in[-1]}) by default')
 
     if isinstance(MF_in, int):
         MF_in = list(MF_in)
 
-    if len(MF_in) == []:
-        nb_mF = shape_field[1]//2
-        MF_in = np.arange(nb_mF)
-        MF_max = MF_in[-1]
-        print(f'WARNING: you did not select MF_max, setting it to {MF_in[-1]} by default')
-        print(f'WARNING: you did not select MF_in, setting it to arange({MF_in[-1]}) by default')
+    # if len(MF_in) == []:
+    #     nb_mF = shape_field[1]//2
+    #     MF_in = np.arange(nb_mF)
+    #     MF_max = MF_in[-1]
+    #     print(f'WARNING: you did not select MF_max, setting it to {MF_in[-1]} by default')
+    #     print(f'WARNING: you did not select MF_in, setting it to arange({MF_in[-1]}) by default')
 
-    else:
-        nb_mF = len(MF_in)
+    # else:
+    nb_mF = len(MF_in)
+
     # try:
     #     assert nb_mF == shape_field[1]//2
     # except AssertionError:
