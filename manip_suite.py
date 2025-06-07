@@ -129,7 +129,7 @@ def save_phys_from_func(sfem_par,calc_func,path_out,field_name='',iteration_num=
                 f.write(np.ascontiguousarray(component_d_section_s)) # needs to be (theta,N(s))
 
 
-def save_phys_from_field(sfem_par,field,path_out,field_name='',iteration_num=0): #requires (D theta N)
+def save_phys_from_field(sfem_par,field,path_out,field_name='',iteration_num=0): #requires (N D theta)
     if field_name == '':
         field_name = sfem_par.field
     n = 0
@@ -137,13 +137,13 @@ def save_phys_from_field(sfem_par,field,path_out,field_name='',iteration_num=0):
         dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}rr_S{s:04d}"+sfem_par.mesh_ext))
         for d in range(sfem_par.D):
             print(f'doing s = {s} and d = {d}')
-            component_d_section_s = field[d,:,n:n+dn]
+            component_d_section_s = field[n:n+dn,d,:]
             if sfem_par.D == 3:
                 file_name = f'phys_{field_name}{d+1}_S{s:04d}_I{iteration_num:04d}{sfem_par.mesh_ext}'
             elif sfem_par.D == 1:
                 file_name = f'phys_{field_name}_S{s:04d}_I{iteration_num:04d}{sfem_par.mesh_ext}'
             with open(path_out+file_name,"wb") as f:
-                f.write(np.ascontiguousarray(component_d_section_s)) # needs to be (theta,N(s))
+                f.write(np.ascontiguousarray(component_d_section_s.T)) # needs to be (theta,N(s))
         n += dn
 
 

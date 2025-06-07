@@ -2,7 +2,7 @@ from get_par import *
 from read_stb import *
 from read_suite import *
 from manip_suite import *
-
+from write_stb import *
 
 def intro_sfemans():
     print('=========Importing data=========')
