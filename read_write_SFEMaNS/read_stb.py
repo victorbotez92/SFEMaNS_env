@@ -55,6 +55,9 @@ def get_fourier(par,I,MF=[],fourier_type=["c","s"]):# output shape is (N a*D MF)
 
     if MF == []:
         MF = np.arange(par.MF)
+    elif  isinstance(MF, int):
+        MF = [MF]
+        
     n_mF = len(MF)
 
     data = np.zeros(shape=(par.D,n_mF*2,N_tot))
