@@ -32,7 +32,6 @@ class SFEMaNS_par:
         raw_list_meshes = [f".{elm.split('.',1)[1]}" for elm in matching_files]
         list_meshes = list(set(raw_list_meshes))
         nb_meshes = len(list_meshes)
-        print(f"Found {nb_meshes} different meshes.")
         if nb_meshes == 0:
             raise NameError("The folder you selected does not contain any mesh.")
         elif nb_meshes > 1:
@@ -303,5 +302,6 @@ class SFEMaNS_par:
         self.field = field
         self.I = tab_I
         self.MF = MF
+        self.D = D
         # include_binaries(sfem_par,phys,fourier_per_mode,fourier,tab_I,MF)
         # return sfem_par
