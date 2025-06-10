@@ -82,12 +82,15 @@ def get_fourier(par,I,MF=[],fourier_type=["c","s"]):# output shape is (N a*D MF)
 
 
 def get_fourier_per_mode(par,mF,T=-1,fourier_type=["c","s"]):# output shape is (T D a N)
+    """
+    arange this head
+    """
     N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
     N_tot = np.sum(np.array(N))
     N_slice=np.cumsum(np.array(N))
     if T == -1:
-        T = par.I
-    data = np.zeros(shape=(T,par.D,2,N_tot))
+        T = len(par.I)
+    data = np.zeros((T,par.D,2,N_tot))
     for s in range(par.S):
         n = N[s]*par.I
         for d in range(par.D):
