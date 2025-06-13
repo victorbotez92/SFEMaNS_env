@@ -1,3 +1,5 @@
 TODO:
 
--optimize fourier_to_phys (replace for loop by numpy arrays)
+-make new SFEMaNS_par compatible with read_suite
+
+
