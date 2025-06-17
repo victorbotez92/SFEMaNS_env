@@ -229,8 +229,8 @@ def get_suite(par,I,MF=None,opt_extension='',record_stack_lenght=7, get_gauss_po
     for i in I:
         f = get_data_from_suites(par,i,MF,record_stack_lenght=record_stack_lenght, get_gauss_points=get_gauss_points,
         stack_domains=stack_domains)
-        f_out.append(rearrange(f,'I N (D a) -> I D a N', a = 2))
+        f_out.append(rearrange(f,'MF I N (D a) -> I N (D a) MF', a = 2))
 
     f_out = np.array(f_out)
-    f_out = rearrange(f_out,'MF I D a N -> I D (MF a) N')
+    # f_out = rearrange(f_out,'MF I D a N -> I D (MF a) N')
     return f_out
