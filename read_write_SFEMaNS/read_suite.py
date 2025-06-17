@@ -180,7 +180,9 @@ def get_data_from_suites(par,I,mF_to_read,record_stack_lenght=7, get_gauss_point
                    for s in range(par.S) ] 
         
         # node point to gauss points
-        TEMP_gauss =[]            
+        TEMP_gauss =[]   
+        TEMP = np.array(TEMP)
+        print(TEMP.shape)
         for s in range(par.S):
             #arange field by triangle
             X = np.asarray( [TEMP[:][s][:,mesh_jj[s][i]-1,:] for i in range(n_w)] )
