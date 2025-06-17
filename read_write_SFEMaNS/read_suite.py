@@ -161,7 +161,7 @@ def get_data_from_suites(par,I,mF_to_read,record_stack_lenght=7, get_gauss_point
         TEMP_PER_MF = []
         for s in range(par.S):
 
-            TEMP_PER_MF.append( np.asarray(fields[mF, s*Nt:(s+1)*Nt])  )
+            TEMP_PER_MF.append( np.asarray(fields[mF, :, s*Nt:(s+1)*Nt])  )
         TEMP.append(TEMP_PER_MF)
 
     if get_gauss_points :
