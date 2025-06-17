@@ -186,9 +186,9 @@ def get_data_from_suites(par,I,mF_to_read,record_stack_lenght=7, get_gauss_point
             for s in range(par.S):
                 #arange field by triangle
                 X = np.asarray( [TEMP[mF][s][:,mesh_jj[s][i]-1,:] for i in range(n_w)] )
-                print(X.shape)
-                field_gauss = einsum(X,mesh_ww[s],'nw me d, nw l_G -> me l_G d ')
-                TEMP_gauss_per_mF.append( rearrange(field_gauss, "me l_G d -> (me l_G) d") )
+                # print(X.shape)
+                field_gauss = einsum(X,mesh_ww[s],'nw I me d, nw l_G -> I me l_G d ')
+                TEMP_gauss_per_mF.append( rearrange(field_gauss, "I me l_G d -> I (me l_G) d") )
             TEMP_gauss.append(TEMP_gauss_per_mF)
         TEMP = TEMP_gauss
     
