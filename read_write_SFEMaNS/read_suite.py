@@ -155,14 +155,14 @@ def get_data_from_suites(par,I,mF_to_read,record_stack_lenght=7, get_gauss_point
             f = read_in_suite(path, mF, first_offset, nb_components, record_stack_lenght)
             field_per_mF.append(f)
         fields.append(field_per_mF)
-    fields = np.array(fields)
+    # fields = np.array(fields)
     
     TEMP=[]
     for mF in mF_to_read:
         TEMP_PER_MF = []
         for s in range(par.S):
-
-            TEMP_PER_MF.append( np.asarray(fields[mF, :, s*Nt:(s+1)*Nt])  )
+            # TEMP_PER_MF.append( np.asarray(fields[mF, :, s*Nt:(s+1)*Nt])  )
+            TEMP_PER_MF.append( np.asarray(fields[mF][:][s*Nt:(s+1)*Nt])  )
         TEMP.append(TEMP_PER_MF)
 
     if get_gauss_points :
