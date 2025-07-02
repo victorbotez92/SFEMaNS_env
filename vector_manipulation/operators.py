@@ -14,7 +14,14 @@ def nodes_to_gauss(field, mesh):
         return einsum(field, mesh.ww, 'n_snap nw me, nw l_G -> n_snap l_G me')
     
 
-def gauss_to_nodes(field_in, mesh):  #field of shape ((l_G, me), D, MF)
+def gauss_to_nodes(field_in, mesh, W):  #field of shape ((l_G, me), D, MF)
+    """
+    switches field on gauss points to field on nodes
+    field_in : ((l_G me), D, MF)
+    mesh : output from define_mesh
+    W : third return from, get_mesh_gauss
+    field_out (N, D, MF)
+    """
     MF = field_in.shape[-1]
     field = rearrange(field_in, '(me l_G) D MF -> (D MF) l_G me', l_G = mesh.l_G)
     # if len(field.shape) == 2:
@@ -23,7 +30,7 @@ def gauss_to_nodes(field_in, mesh):  #field of shape ((l_G, me), D, MF)
 #==================BUILDING MASS MATRIX
 
     # Step 1: effective weights (W * detJ) → shape: (lG, me)
-    W_eff = mesh.W * mesh.rj  # shape: (l_G, me)
+    W_eff = rearrange(W, '(me l_G) -> l_G me', l_G=mesh.l_G) * mesh.rj  # shape: (l_G, me)
     nw = mesh.nw
     # Step 2: Triplet assembly arrays (mesh.jj is (nw, me))
 
