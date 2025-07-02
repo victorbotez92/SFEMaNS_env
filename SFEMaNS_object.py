@@ -18,7 +18,7 @@ def read_mesh_info(path):
 
 
 class define_mesh:
-    def __init__(self, path_to_mesh, mesh_type, mesh_ext = None, import_nodes = True, import_gauss = True):
+    def __init__(self, path_to_mesh, mesh_type, mesh_ext = None, surface=False):
         directory = Path(path_to_mesh)
         # search_string = f"{mesh_type}rr_"
         search_string = f"{mesh_type}rr_S0000"
@@ -54,64 +54,54 @@ class define_mesh:
         self.n_w = n_w
         self.l_G = l_G
         
-        if import_gauss:
-            R_G = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}rr_S{s:04d}"+mesh_ext).reshape(l_G,ME[s],order="F") for s in range(S)])
-            Z_G = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}zz_S{s:04d}"+mesh_ext).reshape(l_G,ME[s],order="F") for s in range(S)])
-            W = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}weight_S{s:04d}"+mesh_ext).reshape(l_G,ME[s],order="F") for s in range(S)])
-            self.R_G = R_G
-            self.Z_G = Z_G
-            self.W = W
-        if import_nodes:
-            R_node = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}mesh_rr_node_S{s:04d}"+mesh_ext) for s in range(S)])
-            Z_node = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}mesh_zz_node_S{s:04d}"+mesh_ext) for s in range(S)])
-            self.R = R_node
-            self.Z = Z_node
+        R_node = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}mesh_rr_node_S{s:04d}"+mesh_ext) for s in range(S)])
+        Z_node = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}mesh_zz_node_S{s:04d}"+mesh_ext) for s in range(S)])
+        self.R = R_node
+        self.Z = Z_node
         # self.mesh_type = mesh_type
-
-        if import_gauss and import_nodes:
-
-            MEs = [ read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S{s:04d}.txt")[6] for s in range(S) ]  
-            n_ws = read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S0000.txt")[4]
-            l_Gs = read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S0000.txt")[5]
 
 #============= DOING jj
 
-            mesh_jj = [ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_jj_S{s:04d}"+mesh_ext,dtype=np.int32).reshape(n_w,ME[s],order="F") 
-                   for s in range(S) ]
-            
-            nodes_per_S = np.array([mesh_jj[s].max() for s in range(S)])
-            cumul_nodes_per_S=np.cumsum(nodes_per_S)
-            for s in range(1,S):
-                mesh_jj[s]+=cumul_nodes_per_S[s-1]
-            mesh_jj = np.hstack(mesh_jj)-1
+        mesh_jj = [ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_jj_S{s:04d}"+mesh_ext,dtype=np.int32).reshape(n_w,ME[s],order="F") 
+                for s in range(S) ]
+        
+        nodes_per_S = np.array([mesh_jj[s].max() for s in range(S)])
+        cumul_nodes_per_S=np.cumsum(nodes_per_S)
+        for s in range(1,S):
+            mesh_jj[s]+=cumul_nodes_per_S[s-1]
+        mesh_jj = np.hstack(mesh_jj)-1
 #============== DOING ww
-            mesh_ww = np.hstack([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_ww_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(n_w,l_G,order="F") 
-                            for s in range(S) ])
-            if S > 1:
-                ww_assertion = mesh_ww[:,:l_G] == mesh_ww[:,l_G:2*l_G]
-                for s in range(2, S):
-                    ww_assertion = np.logical_and(ww_assertion, mesh_ww[:,:l_G]==mesh_ww[:,s*l_G:(s+1)*l_G])
-                assert np.prod(ww_assertion)
-            mesh_ww=mesh_ww[:,:l_G]
+        mesh_ww = np.hstack([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_ww_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(n_w,l_G,order="F") 
+                        for s in range(S) ])
+        if S > 1:
+            ww_assertion = mesh_ww[:,:l_G] == mesh_ww[:,l_G:2*l_G]
+            for s in range(2, S):
+                ww_assertion = np.logical_and(ww_assertion, mesh_ww[:,:l_G]==mesh_ww[:,s*l_G:(s+1)*l_G])
+            assert np.prod(ww_assertion)
+        mesh_ww=mesh_ww[:,:l_G]
 #=============== DOING rj
-            mesh_rj = np.hstack([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_rj_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(l_G,ME[s],order="F") 
-                            for s in range(S) ])
-            
-            self.jj = mesh_jj
-            self.ww = mesh_ww
-            self.rj = mesh_rj
+        mesh_rj = np.hstack([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_rj_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(l_G,ME[s],order="F") 
+                        for s in range(S) ])
+        
+        self.jj = mesh_jj
+        self.ww = mesh_ww
+        self.rj = mesh_rj
 
-            nw, lG, me = mesh_ww.shape[0], mesh_ww.shape[1], mesh_jj.shape[1]
-            self.nw, self.lG, self.me = nw, lG, me
+        nw, lG, me = mesh_ww.shape[0], mesh_ww.shape[1], mesh_jj.shape[1]
+        self.nw, self.lG, self.me = nw, lG, me
 
-            nn = np.max(mesh_jj) + 1
-            self.nn = nn
+        nn = np.max(mesh_jj) + 1
+        self.nn = nn
 
-            mesh_dw = np.concatenate([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_dw_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(2,n_w,l_G,ME[s],order="F") 
-                            for s in range(S) ], axis=3)
-            self.dw = mesh_dw
+        mesh_dw = np.concatenate([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_dw_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(2,n_w,l_G,ME[s],order="F") 
+                        for s in range(S) ], axis=3)
+        self.dw = mesh_dw
 
 
+        if surface:
+            MEs = [ read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S{s:04d}.txt")[6] for s in range(S) ]  
+            n_ws = read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S0000.txt")[4]
+            l_Gs = read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S0000.txt")[5]
 #===================== DOING JJ_S
 
             mesh_jjs = [ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_jjs_S{s:04d}"+mesh_ext,dtype=np.int32).reshape(n_ws,MEs[s],order="F") for s in range(S) ]
@@ -134,7 +124,7 @@ class define_mesh:
 #==================== DOING RJ_S
 
             mesh_rjs = np.hstack([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_rjs_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(l_Gs,MEs[s],order="F") 
-                                        for s in range(S) ])
+                                    for s in range(S) ])
 
             self.jjs = mesh_jjs
             self.wws = mesh_wws
