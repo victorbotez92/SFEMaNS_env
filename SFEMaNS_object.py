@@ -10,12 +10,16 @@ def read_mesh_info(path):
         l_G = int(values[1])
         me  = int(values[2])
         n_p = int(values[3])
-        values_2 = line[11::2][:3]
-        n_ws = int(values_2[0])
-        l_Gs = int(values_2[1])
-        mes = int(values_2[2])
-    return n_w,l_G,me,n_p,n_ws,l_Gs,mes
+    return [n_w,l_G,me,n_p]
 
+def read_mesh_info_surface(path):
+    with open(path) as file:
+        line = file.readlines()
+        values = line[11::2][:3]
+        n_ws = int(values[0])
+        l_Gs = int(values[1])
+        mes = int(values[2])
+    return [n_ws,l_Gs,mes]
 
 class define_mesh:
     def __init__(self, path_to_mesh, mesh_type, mesh_ext = None, surface=False):
@@ -44,7 +48,6 @@ class define_mesh:
         tab_S = [int((elm.split(search_string_1)[1]).split(mesh_ext)[0]) for elm in matching_files]
         S = np.array(tab_S).max() + 1
         self.S = S
-
 
         ME = [ read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S{s:04d}.txt")[2] for s in range(S) ]  
         n_w = read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S0000.txt")[0]
@@ -99,9 +102,9 @@ class define_mesh:
 
 
         if surface:
-            MEs = [ read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S{s:04d}.txt")[6] for s in range(S) ]  
-            n_ws = read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S0000.txt")[4]
-            l_Gs = read_mesh_info(path_to_mesh+f"/{mesh_type}mesh_info_S0000.txt")[5]
+            MEs = [ read_mesh_info_surface(path_to_mesh+f"/{mesh_type}mesh_info_S{s:04d}.txt")[2] for s in range(S) ]  
+            n_ws = read_mesh_info_surface(path_to_mesh+f"/{mesh_type}mesh_info_S0000.txt")[0]
+            l_Gs = read_mesh_info_surface(path_to_mesh+f"/{mesh_type}mesh_info_S0000.txt")[1]
 #===================== DOING JJ_S
 
             mesh_jjs = [ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_jjs_S{s:04d}"+mesh_ext,dtype=np.int32).reshape(n_ws,MEs[s],order="F") for s in range(S) ]
