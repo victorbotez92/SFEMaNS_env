@@ -5,23 +5,42 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import factorized
 
 
-def nodes_to_gauss(field, mesh):
+def nodes_to_gauss(field, mesh): # must have shape (N D MF)
+    """
+    Sends nodes to gauss points
+
+        field_in : (N, D, MF)
+        mesh : output from define_mesh
+
+        field_out : (me l_G) D MF
+    """
+    if field.shape[0] != mesh.jj.max()+1:
+        raise TypeError(f"Expected nodes (i.e {mesh.jj.max()+1}), got {field.shape[0]} (out of {field.shape})")
+    
+    field_out = einsum(field[mesh.jj, :, :], mesh.ww, 'nw me D MF, nw l_G -> l_G me D MF')
+    return rearrange(field_out, "l_G me D MF -> (me l_G) D MF")
     # for s in range(par.S):
         #arange field by triangle
-    if len(field.shape) == 2:
-        return einsum(field, mesh.ww, 'nw me, nw l_G -> l_G me')
-    else:
-        return einsum(field, mesh.ww, 'n_snap nw me, nw l_G -> n_snap l_G me')
+    # if len(field.shape) == 2:
+    #     return einsum(field, mesh.ww, 'nw me, nw l_G -> l_G me')
+    # else:
+    #     return einsum(field, mesh.ww, 'n_snap nw me, nw l_G -> n_snap l_G me')
     
 
-def gauss_to_nodes(field_in, mesh, W):  #field of shape ((l_G, me), D, MF)
+def gauss_to_nodes(field_in, mesh, W):  #field of shape ((l_G me) D MF)
     """
-    switches field on gauss points to field on nodes
-    field_in : ((l_G me), D, MF)
-    mesh : output from define_mesh
-    W : third return from, get_mesh_gauss
-    field_out (N, D, MF)
+    Sends gauss points to field to nodes
+
+        field_in : ((l_G me), D, MF)
+        mesh : output from define_mesh
+        W : third return from, get_mesh_gauss
+
+        field_out : (N, D, MF)
     """
+
+    if field_in.shape[0] != mesh.l_G*mesh.me:
+        raise TypeError(f"Expected gauss points (i.e {mesh.l_G*mesh.me}), got {field_in.shape[0]} (out of {field_in.shape})")
+
     MF = field_in.shape[-1]
     field = rearrange(field_in, '(me l_G) D MF -> (D MF) l_G me', l_G = mesh.l_G)
     # if len(field.shape) == 2:
@@ -88,7 +107,7 @@ def send_to_triangle(field, mesh):
 
 
 
-def curl(field_nodes, mesh, list_modes = None):
+def curl(field_nodes, mesh, R_gauss, list_modes = None):
     """Compute the curl of a vector field INITIALLY ON NODES.
     Requirements: 
         numpy, einops
@@ -104,10 +123,10 @@ def curl(field_nodes, mesh, list_modes = None):
 
     MF = len(list_modes)
     
-    rot_gauss = np.empty((mesh.R_G.shape[0], mesh.R_G.shape[1], 6, field_nodes.shape[-1])) #l_G, me, 6, mF with 6 corresponding to the 6 types for vector
+    rot_gauss = np.empty((mesh.l_G, mesh.me, 6, field_nodes.shape[-1])) #l_G, me, 6, mF with 6 corresponding to the 6 types for vector
 
     list_modes = list_modes.reshape(1, 1, MF) #1 1 mF
-    rays = mesh.R_G.reshape(mesh.l_G, mesh.me, 1) #l_G me 1
+    rays = rearrange(R_gauss, '(me l_G) -> l_G me 1', l_G=mesh.l_G) #l_G me 1
     # mesh.jj with shape nw me and has values in [0, nn-1]
     
     rot_gauss[:, :, 0, :] = list_modes/rays*einsum(field_nodes[mesh.jj, 5, :], mesh.ww, 'nw me mF, nw l_G -> l_G me mF') - einsum(field_nodes[mesh.jj, 2, :], mesh.dw[1, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
@@ -124,7 +143,7 @@ def curl(field_nodes, mesh, list_modes = None):
 
 
 
-def grad(field_nodes, mesh, list_modes = None):
+def grad(field_nodes, mesh, R_gauss, list_modes = None):
     """Compute the gradient of a scalar field INITIALLY ON NODES.
     Requirements: 
         numpy, einops
@@ -140,10 +159,10 @@ def grad(field_nodes, mesh, list_modes = None):
 
     MF = len(list_modes)
     
-    grad_gauss = np.empty((mesh.R_G.shape[0], mesh.R_G.shape[1], 6, field_nodes.shape[-1])) #l_G, me, 6, mF with 6 corresponding to the 6 types for vector
+    grad_gauss = np.empty((mesh.l_G, mesh.me, 6, field_nodes.shape[-1])) #l_G, me, 6, mF with 6 corresponding to the 6 types for vector
 
     list_modes = list_modes.reshape(1, 1, MF) #1 1 mF
-    rays = mesh.R_G.reshape(mesh.l_G, mesh.me, 1) #l_G me 1
+    rays = rearrange(R_gauss, '(me l_G) -> l_G me 1', l_G=mesh.l_G) #l_G me 1
     # mesh.jj with shape nw me and has values in [0, nn-1]
     
     grad_gauss[:, :, 0, :] = einsum(field_nodes[mesh.jj, 0, :], mesh.dw[0, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')

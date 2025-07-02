@@ -204,11 +204,12 @@ class SFEMaNS_par:
         self.mesh_ext = mesh_ext
         self.mesh_type = mesh_type
 
-    def add_suite_ns(self, path_suites, name_suites="suite_ns_", field=None, D=None):
+    def add_suite_ns(self, path_suites, name_suites="suite_ns_", field=None, D=None, replace = False):
         if self.bins == True:
             raise Exception("your SFEMaNS parameter does already contain information about binaries, please create a new one for suites")
         if self.suites == True:
-            print("WARNING : previous data about suites replaced")
+            if not replace:
+                raise ValueError("this SFEMaNS_par already contains data, please set 'replace=True'")
         if not self.mesh_type in ["pp", "vv"]:
             raise TypeError(f"SFEMaNS object is on {self.mesh_type} while ns-like suite requires pp or vv")
         if field is None:
@@ -242,11 +243,12 @@ class SFEMaNS_par:
         # include_suite(sfem_par,path_suites,name_suites, field, tab_I)
         # return sfem_par
 
-    def add_suite_maxwell(self, path_suites, name_suites="suite_maxwell_", field=None, D=None):
+    def add_suite_maxwell(self, path_suites, name_suites="suite_maxwell_", field=None, D=None, replace=False):
         if self.bins == True:
             raise Exception("your SFEMaNS parameter does already contain information about binaries, please create a new one for suites")
         if self.suites == True:
-            print("WARNING : previous data about suites replaced")
+            if not replace:
+                raise ValueError("this SFEMaNS_par already contains data, please set 'replace=True'")
         if not self.mesh_type in ["phi", "H"]:
             raise TypeError(f"SFEMaNS object is on {self.mesh_type} while maxwell-like suite requires phi or H")
         if field is None:
@@ -280,11 +282,12 @@ class SFEMaNS_par:
         # include_suite(sfem_par,path_suites,name_suites, field, tab_I)
         # return sfem_par
 
-    def add_bins(self, path_binaries, field=None, D=None):
+    def add_bins(self, path_binaries, field=None, D=None, replace=False):
         if self.suites == True:
             raise Exception("your SFEMaNS parameter does already contain information about suites, please create a new one for binaries")
         if self.bins == True:
-            print("WARNING : previous data about binaries replaced")
+            if not replace:
+                raise ValueError("this SFEMaNS_par already contains data, please set 'replace=True'")
         if field is None:
             list_possible_fields = []
 

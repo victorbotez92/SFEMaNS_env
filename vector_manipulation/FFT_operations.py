@@ -85,6 +85,10 @@ def FFT_CROSS_PROD(field_1, field_2, list_modes=None, pad = True):
     Returns:
         field_out[X, 6, list_modes.size()]: vectorial product kept on nodes or Gauss points.
     """
+
+    if field_1.shape[0] != field_2.shape[0]:
+        raise TypeError("the two fields have different shapes, make sure they are both either on nodes or Gauss")
+
     if list_modes is None:
         assert field_1.shape == field_2.shape
         mF_max = field_1.shape[-1]
@@ -124,6 +128,10 @@ def FFT_DOT_PROD(field_1, field_2, list_modes=None, pad = True):
     Returns:
         field_out[X, 2, list_modes.size()]: scalar product kept on nodes or Gauss points.
     """
+
+    if field_1.shape[0] != field_2.shape[0]:
+        raise TypeError("the two fields have different shapes, make sure they are both either on nodes or Gauss")
+
     if list_modes is None:
         assert field_1.shape == field_2.shape
         mF_max = field_1.shape[-1]
@@ -162,6 +170,10 @@ def FFT_SCAL_VECT_PROD(field_1, field_2, list_modes=None, pad = True, exponent=1
     Returns:
         field_out[X, 6, list_modes.size()]: scalar product kept on nodes or Gauss points.
     """
+
+    if field_1.shape[0] != field_2.shape[0]:
+        raise TypeError("the two fields have different shapes, make sure they are both either on nodes or Gauss")
+
     if list_modes is None:
         assert field_1.shape[-1] == field_2.shape[-1] and field_1.shape[0] == field_2.shape[0]
         mF_max = field_1.shape[-1]
@@ -188,7 +200,8 @@ def FFT_SCAL_VECT_PROD(field_1, field_2, list_modes=None, pad = True, exponent=1
     field_prod = phys_to_fourier(field_prod_phys)
     return field_prod[:, :, np.array(list_modes)]
 
-def FFT_EUCLIDIAN_PROD(field_1, field_2, mesh):
+
+def FFT_EUCLIDIAN_PROD(field_1, field_2, W_gauss):
     """Compute the euclidian product between two fields on Gauss points (i.e scalar product and then volume integral without normalization)
 
     Requirements: 
@@ -199,9 +212,15 @@ def FFT_EUCLIDIAN_PROD(field_1, field_2, mesh):
     Returns:
         integral over mesh of field_1.field_2: scalar product kept on nodes or Gauss points.
     """
+
+    if field_1.shape[0] != W_gauss.shape[0]:
+        raise TypeError("First field has wrong shape w.r.t W_gauss, make sure it is on Gauss points")
+    if field_2.shape[0] != W_gauss.shape[0]:
+        raise TypeError("Second field has wrong shape w.r.t W_gauss, make sure it is on Gauss points")
+    
     field_product = np.zeros(field_1.shape)
     field_product = (field_1*field_2).sum(axis=1)
     field_product[:, 1:] *= 1/2
     field_product = field_product.sum(axis=1)
 
-    return np.sum(field_product*mesh.W.reshape(mesh.l_G*mesh.me))
+    return 2*np.pi*np.sum(field_product*W_gauss)
