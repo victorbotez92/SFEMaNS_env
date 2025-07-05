@@ -137,7 +137,7 @@ def curl(field_nodes, mesh, R_gauss, list_modes = None):
     rot_gauss[:, :, 3, :] = einsum(field_nodes[mesh.jj, 1, :], mesh.dw[1, :, :, :], 'nw me mF, nw l_G me -> l_G me mF') - einsum(field_nodes[mesh.jj, 5, :], mesh.dw[0, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
     rot_gauss[:, :, 5, :] = 1/rays*einsum(field_nodes[mesh.jj, 3, :], mesh.ww, 'nw me mF, nw l_G -> l_G me mF')+einsum(field_nodes[mesh.jj, 3, :], mesh.dw[0, :, :, :], 'nw me mF, nw l_G me -> l_G me mF') + list_modes/rays*einsum(field_nodes[mesh.jj, 0, :], mesh.ww, 'nw me mF, nw l_G -> l_G me mF')
 
-    return rearrange(rot_gauss, "l_G me c MF -> (l_G me) c MF")
+    return rearrange(rot_gauss, "l_G me c MF -> (me l_G) c MF")
 
 
 
@@ -174,4 +174,4 @@ def grad(field_nodes, mesh, R_gauss, list_modes = None):
     grad_gauss[:, :, 4, :] = einsum(field_nodes[mesh.jj, 0, :], mesh.dw[1, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
     grad_gauss[:, :, 5, :] = einsum(field_nodes[mesh.jj, 1, :], mesh.dw[1, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
 
-    return rearrange(grad_gauss, "l_G me c MF -> (l_G me) c MF")
+    return rearrange(grad_gauss, "l_G me c MF -> (me l_G) c MF")
