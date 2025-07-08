@@ -135,7 +135,7 @@ def get_data_from_suites(par,I,mF_to_read,record_stack_lenght=7, get_gauss_point
         add_str = f'_I{I:03d}'
     for s in range(par.S):
         # suite_names.append(f'{suite_kind}_S{s:03d}{add_str}{par.mesh_ext}')
-        suite_names.append(f'{par.name_suites}_S{s:03d}{add_str}{par.mesh_ext}')
+        suite_names.append(f'{par.name_suites}S{s:03d}{add_str}{par.mesh_ext}')
 
     suite_files = [par.path_suites+'/'+elm for elm in suite_names]
 
