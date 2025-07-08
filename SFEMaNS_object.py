@@ -193,7 +193,7 @@ methods:
                 tab_replace = np.where(self.jjs==j)
                 self.jjs[tab_replace] = indices[i, 0]
 
-            self.tab_rm = indices[:, 1]
+        self.tab_rm = indices[:, 1]
         
     def build_tab_sym(self, epsilon_z_0=1e-7):
 
