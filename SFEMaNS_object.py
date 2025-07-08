@@ -147,15 +147,15 @@ method "rm_duplicate()"
         else:
             self.surface = False
 
-    def rm_duplicate(self):
+    def rm_duplicate(self,hmin=1e-5):
     #============== FINDING DUPLICATE INDICES
         indices = []
         for i in range(self.jj.max()+1):
             r,z = self.R[i], self.Z[i]
 
             test_tab = np.delete(np.array([self.R, self.Z]), i, axis=1)
-            if np.sqrt(np.sum((np.array([r, z]).reshape(2, 1)-test_tab)**2, axis=0)).min()<1e-6:
-                tab = np.where(np.sqrt(np.sum((np.array([r, z]).reshape(2, 1)-test_tab)**2, axis=0))<1e-5)[0]
+            if np.sqrt(np.sum((np.array([r, z]).reshape(2, 1)-test_tab)**2, axis=0)).min()<hmin:
+                tab = np.where(np.sqrt(np.sum((np.array([r, z]).reshape(2, 1)-test_tab)**2, axis=0))<hmin)[0]
                 if len(tab) != 1:
                     raise ValueError(f"ERROR IN RM_DUPLICATE in loop {i}: found too many mixed points, check mesh.R[{tab}] and mesh.Z[{tab}]")
                 # assert len(tab) == 1
