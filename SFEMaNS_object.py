@@ -29,9 +29,15 @@ class define_mesh:
 ("jj, ww, dw, rj, nw, lG, me, nn")
 opt surface
 
-method "rm_duplicate()"
+methods:
+    - "rm_duplicate()"
+    - "build_tab_sym()" (requires to do rm_duplicate() before)
+
     """
     def __init__(self, path_to_mesh, mesh_type, mesh_ext = None, surface=False):
+        #============== USEFUL STUFF FOR IS NONE
+        self.tab_rm = None #if rm_duplicate present or not
+        #============== USEFUL STUFF FOR IS NONE
         directory = Path(path_to_mesh)
         # search_string = f"{mesh_type}rr_"
         search_string = f"{mesh_type}rr_S0000"
@@ -188,7 +194,29 @@ method "rm_duplicate()"
                 self.jjs[tab_replace] = indices[i, 0]
 
             self.tab_rm = indices[:, 1]
+        
+    def build_tab_sym(self, epsilon_z_0=1e-7):
 
+        if self.tab_rm is None:
+            raise NameError('Make sure to first remove the duplicates')
+        
+        partial_sort = np.argsort(R**3+Z**2)
+        mask_z_is_not_0 = np.abs(self.Z[partial_sort])>epsilon_z_0
+        
+        flip_partial_sort = np.copy(partial_sort)
+        restriction_z_is_not_0 = np.zeros(mask_z_is_not_0.sum(), dtype=np.int32)
+
+        restriction_z_is_not_0[1::2] = partial_sort[mask_z_is_not_0][::2]
+        restriction_z_is_not_0[::2] = partial_sort[mask_z_is_not_0][1::2]
+
+        flip_partial_sort[mask_z_is_not_0] = restriction_z_is_not_0
+
+        inverse_partial_sort = np.empty(partial_sort.shape[0],dtype=np.int32)
+        inverse_partial_sort[partial_sort] = np.arange(partial_sort.shape[0])
+
+        tab_sym = flip_partial_sort[inverse_partial_sort]
+
+        self.tab_sym = tab_sym
 
 #==================================================================================
 #==================================================================================
