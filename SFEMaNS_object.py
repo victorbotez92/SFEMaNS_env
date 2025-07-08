@@ -22,6 +22,15 @@ def read_mesh_info_surface(path):
     return [n_ws,l_Gs,mes]
 
 class define_mesh:
+    """
+    Class to define a mesh object with all its attributes
+("path_to_mesh, mesh_ext, S, ME, n_w, l_G")
+("On nodes : R, Z")
+("jj, ww, dw, rj, nw, lG, me, nn")
+opt surface
+
+method "rm_duplicate()"
+    """
     def __init__(self, path_to_mesh, mesh_type, mesh_ext = None, surface=False):
         directory = Path(path_to_mesh)
         # search_string = f"{mesh_type}rr_"
@@ -100,7 +109,6 @@ class define_mesh:
                         for s in range(S) ], axis=3)
         self.dw = mesh_dw
 
-
         if surface:
             MEs = [ read_mesh_info_surface(path_to_mesh+f"/{mesh_type}mesh_info_S{s:04d}.txt")[2] for s in range(S) ]  
             n_ws = read_mesh_info_surface(path_to_mesh+f"/{mesh_type}mesh_info_S0000.txt")[0]
@@ -135,13 +143,49 @@ class define_mesh:
             self.nws = n_ws
             self.l_Gs = l_Gs
             self.mes = mesh_jjs.shape[1]
+            self.surface = True
+        else:
+            self.surface = False
 
-    def help(self):
-        print("path_to_mesh, mesh_ext, S, ME, n_w, l_G")
-        print("On nodes : R, Z")
-        print("jj, ww, dw, rj, nw, lG, me, nn")
+    def rm_duplicate(self):
+    #============== FINDING DUPLICATE INDICES
+        indices = []
+        for i in range(self.jj.max()+1):
+            r,z = self.R[i], self.Z[i]
 
+            test_tab = np.delete(np.array([self.R, self.Z]), i, axis=1)
+            if np.abs(np.sum((np.array([r, z]).reshape(2, 1)-test_tab)**2, axis=0)).min()<1e-6:
+                tab = np.where(np.abs(np.sum((np.array([r, z]).reshape(2, 1)-test_tab)**2, axis=0))<1e-5)[0]
+                assert len(tab) == 1
+                if tab[0] >= i:
+                    j = tab[0] + 1
+                    new_pair = np.array([i, j])
+                else:
+                    j = tab[0]
+                    new_pair = np.array([j, i])
+                # mask = tab>i
+                # tab[mask] += 1
+                # if not new_pair in indices:
+                indices.append(new_pair)
+            # if i%20000 == 0:
+            #     print(f"doing {i}")
 
+        indices = np.array(indices)
+    #============== REMOVING DUPLICATES FROM R & Z
+        self.R = np.delete(self.R, indices[:, 1])
+        self.Z = np.delete(self.Z, indices[:, 1])
+
+    #============== GIVING PROPER INDICES FOR mesh.jj
+        for i in range(len(indices)):
+            j = indices[i, 1]
+            tab_replace = np.where(self.jj==j)
+            self.jj[tab_replace] = indices[i, 0]
+
+            if self.surface:
+                tab_replace = np.where(self.jjs==j)
+                self.jjs[tab_replace] = indices[i, 0]
+
+            self.tab_rm = indices[:, 1]
 
 
 #==================================================================================
