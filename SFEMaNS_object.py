@@ -156,7 +156,9 @@ method "rm_duplicate()"
             test_tab = np.delete(np.array([self.R, self.Z]), i, axis=1)
             if np.abs(np.sum((np.array([r, z]).reshape(2, 1)-test_tab)**2, axis=0)).min()<1e-6:
                 tab = np.where(np.abs(np.sum((np.array([r, z]).reshape(2, 1)-test_tab)**2, axis=0))<1e-5)[0]
-                assert len(tab) == 1
+                if len(tab) != 1:
+                    raise ValueError(f"ERROR IN RM_DUPLICATE: found too many mixed points, check mesh.R[{tab}] and mesh.Z[{tab}]")
+                # assert len(tab) == 1
                 if tab[0] >= i:
                     j = tab[0] + 1
                     new_pair = np.array([i, j])
