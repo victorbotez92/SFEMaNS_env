@@ -200,7 +200,7 @@ methods:
         if self.tab_rm is None:
             raise NameError('Make sure to first remove the duplicates')
         
-        partial_sort = np.argsort(R**3+Z**2)
+        partial_sort = np.argsort(self.R**3+self.Z**2)
         mask_z_is_not_0 = np.abs(self.Z[partial_sort])>epsilon_z_0
         
         flip_partial_sort = np.copy(partial_sort)
