@@ -40,7 +40,7 @@ methods:
         #============== USEFUL STUFF FOR IS NONE
         directory = Path(path_to_mesh)
         # search_string = f"{mesh_type}rr_"
-        search_string = f"{mesh_type}rr_S0000"
+        search_string = f"{mesh_type}mesh_rr_node_S0000"
         matching_files = [file.name for file in directory.iterdir() if search_string in file.name]
         if mesh_ext is None:
             raw_list_meshes = [f".{elm.split('.',1)[1]}" for elm in matching_files]
@@ -58,7 +58,7 @@ methods:
         self.path_to_mesh = path_to_mesh
         self.mesh_ext = mesh_ext
 
-        search_string_1 = f"{mesh_type}rr_S"
+        search_string_1 = f"{mesh_type}mesh_rr_node_S"
         matching_files = [file.name for file in directory.iterdir() if ((search_string_1 in file.name) and (mesh_ext in file.name))]
         tab_S = [int((elm.split(search_string_1)[1]).split(mesh_ext)[0]) for elm in matching_files]
         S = np.array(tab_S).max() + 1
@@ -142,9 +142,13 @@ methods:
 
             mesh_rjs = np.hstack([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_rjs_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(l_Gs,MEs[s],order="F") 
                                     for s in range(S) ])
-
+#==================== DOING DW_S
+            mesh_dws = np.concatenate([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_dws_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(1,n_ws,l_Gs,MEs[s],order="F") 
+                            for s in range(S) ], axis=3)
+        
             self.jjs = mesh_jjs
             self.wws = mesh_wws
+            self.dws = mesh_dws
             self.rjs = mesh_rjs
             self.nws = n_ws
             self.l_Gs = l_Gs
@@ -246,7 +250,7 @@ class SFEMaNS_par:
             mesh_type = input("Choose mesh_type in vv, pp, H, phi")
 
         directory = Path(path_to_mesh)
-        search_string = f"{mesh_type}rr_"
+        search_string = f"{mesh_type}mesh_rr_"
 
         matching_files = [file.name for file in directory.iterdir() if search_string in file.name]
         
@@ -264,7 +268,7 @@ class SFEMaNS_par:
     #===============Defining mesh_ext
         mesh_ext = list_meshes[num_mesh]
 
-        search_string = f"{mesh_type}rr_"
+        search_string = f"{mesh_type}mesh_rr_"
         matching_files = [file.name for file in directory.iterdir() if ((search_string in file.name) and (mesh_ext in file.name))]
         list_s = [int((elm.split(".")[0]).split("S")[-1]) for elm in matching_files]
 
@@ -313,7 +317,6 @@ class SFEMaNS_par:
         self.name_suites = name_suites
         self.field = field
         self.tab_I = tab_I
-
         # include_suite(sfem_par,path_suites,name_suites, field, tab_I)
         # return sfem_par
 
@@ -352,7 +355,6 @@ class SFEMaNS_par:
         self.name_suites = name_suites
         self.field = field
         self.tab_I = tab_I
-
         # include_suite(sfem_par,path_suites,name_suites, field, tab_I)
         # return sfem_par
 

@@ -208,7 +208,7 @@ def read_mesh_info(path):
     return n_w,l_G,me,n_p
 
 
-def get_suite(par,I,MF=None,record_stack_lenght=7, get_gauss_points=True,stack_domains=True):
+def get_suite(par,I,MF=None,record_stack_lenght=7, get_gauss_points=False,stack_domains=True):
     if isinstance(I, int):
         I = [I]
     if MF is None:

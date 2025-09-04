@@ -12,6 +12,10 @@ def write_fourier_per_mode(sfem_par,field,path_out,field_name='',mF=0): #field i
         field_name
         mF: Fourier mode (the two axis cos & sine are always saved together)
     """
+
+    if field.shape[1] == 3 or field.shape[1] == 1:
+        raise TypeError("Error in write_fourier_per_mode: it seems like your field is in phys format and not fourier")
+    
     if field_name == '':
         field_name = sfem_par.field
     n = 0
@@ -43,6 +47,8 @@ def write_fourier(sfem_par,field,path_out,field_name='',I=0): #field is shape (N
         field_name
         I: value of iteration to be saved
     """
+    if field.shape[1] == 3 or field.shape[1] == 1:
+        raise TypeError("Error in write_fourier: it seems like your field is in phys format and not fourier")
     if field_name == '':
         field_name = sfem_par.field
     n = 0
@@ -91,6 +97,8 @@ def write_phys(sfem_par,field,path_out,field_name='',I=0): #requires (N D theta)
         field_name
         I: value of iteration to be saved
     """
+    if field.shape[1] == 6 or field.shape[1] == 2:
+        raise TypeError("Error in write_phys: it seems like your field is in fourier format and not phys")
     if field_name == '':
         field_name = sfem_par.field
     n = 0
