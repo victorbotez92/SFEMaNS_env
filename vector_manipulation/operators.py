@@ -211,6 +211,7 @@ def advection_vect(field_nodes_1, field_nodes_2, mesh, R_gauss, list_modes = Non
 
     # DERIVATIVES ALONG R
     vector_field_gauss_phys = einsum(field_nodes_2[mesh.jj, :, :], mesh.dw[0, :, :, :], 'nw D me mF, nw l_G me -> (me l_G) D mF')
+    vector_field_gauss_phys = rearrange(vector_field_gauss_phys, 'D me l_G mF -> (me l_G) D mF')
     scalar_field_gauss_phys = nodes_to_gauss(field_nodes_1[:, 0:2, :], mesh)
     
     advection_gauss[:, :, :, :] += rearrange(FFT_SCAL_VECT_PROD(scalar_field_gauss_phys, vector_field_gauss_phys), '(me l_G) D mF -> l_G me D mF', l_G=mesh.l_G)
