@@ -4,7 +4,7 @@ from einops import rearrange, einsum, repeat
 from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import factorized
 
-from FFT_operations import fourier_to_phys
+from .FFT_operations import fourier_to_phys
 
 def nodes_to_gauss(field, mesh): # must have shape (N D MF)
     """
