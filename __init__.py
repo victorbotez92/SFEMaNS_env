@@ -26,7 +26,7 @@ def help_SFEMaNS():
     print('WARNING: R, Z, W from get_mesh_gauss ==> shape (me l_G)')
     print()
     print('=========Operators and FFT/IFFT==========')
-    print('gauss_to_nodes, nodes_to_gauss, curl, grad')
+    print('gauss_to_nodes, nodes_to_gauss, curl, grad, advection_vect')
     print('fourier_to_phys, phys_to_fourier')
     print()
     print('=========Vector products===========')
