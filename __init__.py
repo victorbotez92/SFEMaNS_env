@@ -5,7 +5,7 @@ __version__ = "0.2.0"
 
 from .SFEMaNS_object import SFEMaNS_par, define_mesh
 
-from .vector_manipulation.operators import gauss_to_nodes, nodes_to_gauss, curl, grad
+from .vector_manipulation.operators import gauss_to_nodes, nodes_to_gauss, curl, grad, advection_vect
 from .vector_manipulation.FFT_operations import fourier_to_phys, phys_to_fourier
 from .vector_manipulation.FFT_operations import FFT_CROSS_PROD, FFT_DOT_PROD, FFT_SCAL_VECT_PROD, FFT_EUCLIDIAN_PROD
 
