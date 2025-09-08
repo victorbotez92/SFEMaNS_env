@@ -193,8 +193,11 @@ def advection_vect(field_nodes_1, field_nodes_2, mesh, R_gauss, list_modes = Non
     if field_nodes_2.shape[1] != 6:
         raise ValueError("field_nodes_2 should be vector (6 components on 2nd dimension)")
 
+    if field_nodes_1.shape[-1] != field_nodes_2.shape[-1]:
+        raise ValueError("In advection_vect => make sure the two fields have same MF (last dimension)")
+
     if list_modes is None:
-        list_modes = np.arange(field_nodes.shape[-1])
+        list_modes = np.arange(field_nodes_1.shape[-1])
 
     MF = len(list_modes)
     
