@@ -4,7 +4,7 @@ from einops import rearrange, einsum, repeat
 from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import factorized
 
-from .FFT_operations import fourier_to_phys
+from .FFT_operations import fourier_to_phys, FFT_SCAL_VECT_PROD
 
 def nodes_to_gauss(field, mesh): # must have shape (N D MF)
     """
@@ -204,57 +204,54 @@ def advection_vect(field_nodes_1, field_nodes_2, mesh, R_gauss, list_modes = Non
     advection_gauss = np.zeros((mesh.l_G, mesh.me, 6, field_nodes_1.shape[-1])) #l_G, me, 6, mF with 6 corresponding to the 6 types for vector
 
     list_modes = list_modes.reshape(1, 1, MF) #1 1 mF
-    rays = rearrange(R_gauss, '(me l_G) -> l_G me 1', l_G=mesh.l_G) #l_G me 1
 
-    # vector_field_nodes_phys = fourier_to_phys(field_nodes_2)
     # mesh.jj with shape nw me and has values in [0, nn-1]
 
     # DERIVATIVES ALONG R
-    vector_field_gauss_phys = einsum(field_nodes_2[mesh.jj, :, :], mesh.dw[0, :, :, :], 'nw D me mF, nw l_G me -> D me l_G mF')
-    vector_field_gauss_phys = rearrange(vector_field_gauss_phys, 'D me l_G mF -> (me l_G) D mF')
-    scalar_field_gauss_phys = nodes_to_gauss(field_nodes_1[:, 0:2, :], mesh)
+    vector_field_gauss = einsum(field_nodes_2[mesh.jj, :, :], mesh.dw[0, :, :, :], 'nw me D mF, nw l_G me -> me l_G D mF')
+    # vector_field_gauss_phys = einsum(field_nodes_2[mesh.jj, :, :], mesh.dw[0, :, :, :], 'nw D me mF, nw l_G me -> (me l_G) D mF')
+    vector_field_gauss = rearrange(vector_field_gauss, 'me l_G D mF -> (me l_G) D mF')
+    scalar_field_gauss = nodes_to_gauss(field_nodes_1[:, 0:2, :], mesh)
     
-    advection_gauss[:, :, :, :] += rearrange(FFT_SCAL_VECT_PROD(scalar_field_gauss_phys, vector_field_gauss_phys), '(me l_G) D mF -> l_G me D mF', l_G=mesh.l_G)
+    new_contrib = rearrange(FFT_SCAL_VECT_PROD(scalar_field_gauss, vector_field_gauss), '(me l_G) D mF -> l_G me D mF', l_G=mesh.l_G)
+    advection_gauss[:, :, :, :] += new_contrib
+    del new_contrib
 
     # DERIVATIVES ALONG THETA
-    vector_field_gauss_phys = einsum(field_nodes_2[mesh.jj, :, :], mesh.ww, 'nw D me mF, nw l_G -> (me l_G) D mF')
+    vector_field_gauss = einsum(field_nodes_2[mesh.jj, :, :], mesh.ww, 'nw me D mF, nw l_G -> me l_G D mF')
+    vector_field_gauss = rearrange(vector_field_gauss, 'me l_G D mF -> (me l_G) D mF')
 
-    permutation_matrix = np.zeros((6, 6))
+    permutation_matrix = np.zeros((6, 6, vector_field_gauss.shape[-1]))
 
-    permutation_matrix[0, 1] = 1
-    permutation_matrix[0, 2] = -1
+    permutation_matrix[0, 1, :] = list_modes
+    permutation_matrix[0, 2, :] = -1
 
-    permutation_matrix[1, 0] = -1
-    permutation_matrix[1, 3] = -1
+    permutation_matrix[1, 0, :] = -list_modes
+    permutation_matrix[1, 3, :] = -1
 
-    permutation_matrix[2, 0] = 1
-    permutation_matrix[2, 3] = 1
+    permutation_matrix[2, 0, :] = 1
+    permutation_matrix[2, 3, :] = list_modes
 
-    permutation_matrix[3, 1] = 1
-    permutation_matrix[3, 2] = -1
+    permutation_matrix[3, 1, :] = 1
+    permutation_matrix[3, 2, :] = -list_modes
 
-    permutation_matrix[4, 5] = 1
-    permutation_matrix[5, 4] = -1
+    permutation_matrix[4, 5, :] = list_modes
+    permutation_matrix[5, 4, :] = -list_modes
 
-    vector_field_gauss_phys = einsum(permutation_matrix, vector_field_gauss_phys, "D_prime D, (me l_G) D mF -> (me l_G) D_prime mF")
-    scalar_field_gauss_phys = list_modes*rearrange(1/rays, "l_G me 1 -> (me l_G) 1 1")*nodes_to_gauss(field_nodes_1[:, 2:4, :], mesh)
-    
-    advection_gauss[:, :, :, :] += rearrange(FFT_SCAL_VECT_PROD(scalar_field_gauss_phys, vector_field_gauss_phys), '(me l_G) D mF -> l_G me D mF', l_G=mesh.l_G)
+
+    vector_field_gauss = einsum(permutation_matrix, vector_field_gauss, "D_prime D mF, n_G D mF -> n_G D_prime mF")
+
+    scalar_field_gauss = 1/R_gauss.reshape(R_gauss.shape[0], 1, 1)*nodes_to_gauss(field_nodes_1[:, 2:4, :], mesh)
+
+    new_contrib = rearrange(FFT_SCAL_VECT_PROD(scalar_field_gauss, vector_field_gauss), '(me l_G) D mF -> l_G me D mF', l_G=mesh.l_G)
+    advection_gauss[:, :, :, :] += new_contrib
+    del new_contrib
 
     # DERIVATIVES ALONG Z
-    vector_field_gauss_phys = einsum(field_nodes_2[mesh.jj, :, :], mesh.dw[1, :, :, :], 'nw D me mF, nw l_G me -> (me l_G) D mF')
-    scalar_field_gauss_phys = nodes_to_gauss(field_nodes_1[:, 4:6, :], mesh)
+    vector_field_gauss = einsum(field_nodes_2[mesh.jj, :, :], mesh.dw[1, :, :, :], 'nw me D mF, nw l_G me -> me l_G D mF')
+    vector_field_gauss = rearrange(vector_field_gauss, 'me l_G D mF -> (me l_G) D mF')
+    scalar_field_gauss = nodes_to_gauss(field_nodes_1[:, 4:6, :], mesh)
     
-    advection_gauss[:, :, :, :] += rearrange(FFT_SCAL_VECT_PROD(scalar_field_gauss_phys, vector_field_gauss_phys), '(me l_G) D mF -> l_G me D mF', l_G=mesh.l_G)
+    advection_gauss[:, :, :, :] += rearrange(FFT_SCAL_VECT_PROD(scalar_field_gauss, vector_field_gauss), '(me l_G) D mF -> l_G me D mF', l_G=mesh.l_G)
 
     return rearrange(advection_gauss, "l_G me c MF -> (me l_G) c MF")
-
-    # grad_gauss[:, :, 1, :] = einsum(field_nodes[mesh.jj, 1, :], mesh.dw[0, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
-
-    # grad_gauss[:, :, 2, :] = list_modes/rays*einsum(field_nodes[mesh.jj, 1, :], mesh.ww, 'nw me mF, nw l_G -> l_G me mF')
-    # grad_gauss[:, :, 3, :] = -list_modes/rays*einsum(field_nodes[mesh.jj, 0, :], mesh.ww, 'nw me mF, nw l_G -> l_G me mF')
-
-    # grad_gauss[:, :, 4, :] = einsum(field_nodes[mesh.jj, 0, :], mesh.dw[1, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
-    # grad_gauss[:, :, 5, :] = einsum(field_nodes[mesh.jj, 1, :], mesh.dw[1, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
-
-    # return rearrange(grad_gauss, "l_G me c MF -> (me l_G) c MF")
