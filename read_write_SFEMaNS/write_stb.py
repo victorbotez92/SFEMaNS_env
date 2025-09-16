@@ -23,7 +23,8 @@ def write_fourier_per_mode(sfem_par,field,path_out,field_name='',mF=0): #field i
     D = field.shape[1]//2
 
     for s in range(sfem_par.S):
-        dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}rr_S{s:04d}"+sfem_par.mesh_ext))
+        #dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}rr_S{s:04d}"+sfem_par.mesh_ext))
+        dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}mesh_gauss_rj_S{s:04d}"+sfem_par.mesh_ext))
         for d in range(D):
             for a,axis in enumerate(['c','s']):
                 if D > 1:
@@ -56,7 +57,8 @@ def write_fourier(sfem_par,field,path_out,field_name='',I=0): #field is shape (N
     D = field.shape[1]//2
 
     for s in range(sfem_par.S):
-        dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}rr_S{s:04d}"+sfem_par.mesh_ext))
+        dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}mesh_gauss_rj_S{s:04d}"+sfem_par.mesh_ext))
+        #dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}rr_S{s:04d}"+sfem_par.mesh_ext))
         for d in range(D):
             for a,axis in enumerate(['c','s']):
                 if D > 1:

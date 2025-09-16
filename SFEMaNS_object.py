@@ -466,7 +466,8 @@ class SFEMaNS_par:
             tab_I = list(set(tab_I))
             tab_I = np.sort(np.array(tab_I))
             
-            N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
+            #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
+            N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}mesh_gauss_rj_S0000{self.mesh_ext}'))
             if D == 3:
                 char = '1'
             elif D == 1:
@@ -485,7 +486,8 @@ class SFEMaNS_par:
             tab_I = list(set(tab_I))
             tab_I = np.sort(np.array(tab_I))
             
-            N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
+            N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}mesh_gauss_rj_S0000{self.mesh_ext}'))
+            #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
             if D == 3:
                 char = '1'
             elif D == 1:
@@ -507,7 +509,8 @@ class SFEMaNS_par:
             else:
                 MF != len(matching_files)//2//D
 
-            N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
+            N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}mesh_gauss_rj_S0000{self.mesh_ext}'))
+            #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
             if D == 3:
                 char = '1'
             elif D == 1:

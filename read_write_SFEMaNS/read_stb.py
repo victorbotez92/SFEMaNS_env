@@ -1,13 +1,25 @@
 import numpy as np
 
-from einops import rearrange
+from einops import rearrange, einsum
 import os,array
+
+from SFEMaNS_object import define_mesh
 
 #================Get meshes
 def get_mesh_gauss(par):
-    R = np.hstack([np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext) for s in range(par.S)]).reshape(-1)
-    Z = np.hstack([np.fromfile(par.path_to_mesh+f"/{par.mesh_type}zz_S{s:04d}"+par.mesh_ext) for s in range(par.S)]).reshape(-1)
-    W = np.hstack([np.fromfile(par.path_to_mesh+f"/{par.mesh_type}weight_S{s:04d}"+par.mesh_ext) for s in range(par.S)]).reshape(-1)
+    if not os.path.exists(par.path_to_mesh+f"/{par.mesh_type}rr_S0000"+par.mesh_ext):
+        mesh = define_mesh(par.path_to_mesh, par.mesh_type)
+        R = einsum(mesh.R[mesh.jj], mesh.ww, 'nw me, nw l_G -> l_G me')
+        R = rearrange(R, 'l_G me -> (me l_G)')
+        Z = einsum(mesh.Z[mesh.jj], mesh.ww, 'nw me, nw l_G -> l_G me')
+        Z = rearrange(Z, 'l_G me -> (me l_G)')
+        W = einsum(mesh.R[mesh.jj], mesh.ww, mesh.rj, 'nw me, nw l_G, l_G me -> l_G me')
+        W = rearrange(W, 'l_G me -> (me l_G)')
+        del mesh
+    else:
+        R = np.hstack([np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext) for s in range(par.S)]).reshape(-1)
+        Z = np.hstack([np.fromfile(par.path_to_mesh+f"/{par.mesh_type}zz_S{s:04d}"+par.mesh_ext) for s in range(par.S)]).reshape(-1)
+        W = np.hstack([np.fromfile(par.path_to_mesh+f"/{par.mesh_type}weight_S{s:04d}"+par.mesh_ext) for s in range(par.S)]).reshape(-1)
     return R,Z,W
 
 #==============Elementary functions for getting data
@@ -24,7 +36,8 @@ def get_file(path,n):
 
 #===============Functions to get data from stbp
 def get_phys(par,I):# output shape is (N D Theta)
-    N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+    #N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+    N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_gauss_rj_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
     N_tot = np.sum(np.array(N))
     N_slice=np.cumsum(np.array(N))
 
@@ -48,7 +61,8 @@ def get_phys(par,I):# output shape is (N D Theta)
     return rearrange(data, 'D theta N -> N D theta')
 
 def get_fourier(par,I,MF=[],fourier_type=["c","s"]):# output shape is (N a*D MF)
-    N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+    #N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+    N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_gauss_rj_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
     N_tot = np.sum(np.array(N))
     N_slice=np.cumsum(np.array(N))
 
@@ -84,7 +98,8 @@ def get_fourier_per_mode(par,mF,T=-1,fourier_type=["c","s"]):# output shape is (
     """
     arange this head
     """
-    N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+    #N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+    N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_gauss_rj_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
     N_tot = np.sum(np.array(N))
     N_slice=np.cumsum(np.array(N))
     if T == -1:
