@@ -3,14 +3,17 @@ import numpy as np
 from einops import rearrange, einsum
 import os,array,sys
 
-cur_path = os.getcwd()
-#sys.path.append(cur_path+'/../')
 from .SFEMaNS_object import define_mesh
 
 #================Get meshes
-def get_mesh_gauss(par):
+def get_mesh_gauss(par,opt_mesh = None):
+    """
+    Get R, Z, W on gauss points
+    If corresponding files don't exist in par, can provide with opt_mesh on nodes
+    """
     if not os.path.exists(par.path_to_mesh+f"/{par.mesh_type}rr_S0000"+par.mesh_ext):
-        mesh = define_mesh(par.path_to_mesh, par.mesh_type)
+        if opt_mesh is None:
+            mesh = define_mesh(par.path_to_mesh, par.mesh_type)
         R = einsum(mesh.R[mesh.jj], mesh.ww, 'nw me, nw l_G -> l_G me')
         R = rearrange(R, 'l_G me -> (me l_G)')
         Z = einsum(mesh.Z[mesh.jj], mesh.ww, 'nw me, nw l_G -> l_G me')
