@@ -5,7 +5,7 @@ import os,array,sys
 
 cur_path = os.getcwd()
 #sys.path.append(cur_path+'/../')
-from ..SFEMaNS_object import define_mesh
+from .SFEMaNS_object import define_mesh
 
 #================Get meshes
 def get_mesh_gauss(par):
