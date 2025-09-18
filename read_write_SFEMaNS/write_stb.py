@@ -1,8 +1,43 @@
 import numpy as np
+from einops import rearrange
 
 #=========== saving in "fourier per mode format"
 
-def write_fourier_per_mode(sfem_par,field,path_out,field_name='',mF=0): #field is shape (N a*D T)
+#def write_fourier_per_mode(sfem_par,field,path_out,field_name='',mF=0): #field is shape (N a*D T)
+#    """
+#    Function that writes a field of shape (N a*D T) in SFEMaNS Fourier_per_mode format
+#    args:
+#        sfem_par: SFEMaNS parameter (contains mesh_type, mesh_ext, path_to_mesh information)
+#        field: the one to be saved, of shape (N a*D T)
+#        path_out
+#        field_name
+#        mF: Fourier mode (the two axis cos & sine are always saved together)
+#    """
+#
+#    if field.shape[1] == 3 or field.shape[1] == 1:
+#        raise TypeError("Error in write_fourier_per_mode: it seems like your field is in phys format and not fourier")
+#    
+#    if field_name == '':
+#        field_name = sfem_par.field
+#    n = 0
+#
+#    D = field.shape[1]//2
+#
+#    for s in range(sfem_par.S):
+#        #dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}rr_S{s:04d}"+sfem_par.mesh_ext))
+#        dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}mesh_gauss_rj_S{s:04d}"+sfem_par.mesh_ext))
+#        for d in range(D):
+#            for a,axis in enumerate(['c','s']):
+#                if D > 1:
+#                    file_name = "/fourier_{f}{i}{ax}_S{s:04d}_F{m:04d}".format(f=field_name,i=d+1,ax=axis,s=s,m=mF)+sfem_par.mesh_ext
+#                elif D == 1:
+#                    file_name = "/fourier_{f}{ax}_S{s:04d}_F{m:04d}".format(f=field_name,ax=axis,s=s,m=mF)+sfem_par.mesh_ext
+#                component_d_section_s_fourier_mF_a = field[n:n+dn, a+2*d, :]
+#                with open(path_out+file_name,"wb") as f:
+#                    f.write(np.ascontiguousarray(component_d_section_s_fourier_mF_a.T)) # needs to be (T, N(s))
+#        n += dn
+
+def write_fourier_per_mode(sfem_par,field,path_out,field_name='',mF=0,from_gauss=False): #field is shape (T N (a D))
     """
     Function that writes a field of shape (N a*D T) in SFEMaNS Fourier_per_mode format
     args:
@@ -15,7 +50,7 @@ def write_fourier_per_mode(sfem_par,field,path_out,field_name='',mF=0): #field i
 
     if field.shape[1] == 3 or field.shape[1] == 1:
         raise TypeError("Error in write_fourier_per_mode: it seems like your field is in phys format and not fourier")
-    
+
     if field_name == '':
         field_name = sfem_par.field
     n = 0
@@ -23,22 +58,53 @@ def write_fourier_per_mode(sfem_par,field,path_out,field_name='',mF=0): #field i
     D = field.shape[1]//2
 
     for s in range(sfem_par.S):
-        #dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}rr_S{s:04d}"+sfem_par.mesh_ext))
-        dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}mesh_gauss_rj_S{s:04d}"+sfem_par.mesh_ext))
-        for d in range(D):
-            for a,axis in enumerate(['c','s']):
-                if D > 1:
-                    file_name = "/fourier_{f}{i}{ax}_S{s:04d}_F{m:04d}".format(f=field_name,i=d+1,ax=axis,s=s,m=mF)+sfem_par.mesh_ext
-                elif D == 1:
-                    file_name = "/fourier_{f}{ax}_S{s:04d}_F{m:04d}".format(f=field_name,ax=axis,s=s,m=mF)+sfem_par.mesh_ext
-                component_d_section_s_fourier_mF_a = field[n:n+dn, a+2*d, :]
-                with open(path_out+file_name,"wb") as f:
-                    f.write(np.ascontiguousarray(component_d_section_s_fourier_mF_a.T)) # needs to be (T, N(s))
+        if from_gauss:
+            dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}mesh_gauss_rj_S{s:04d}"+sfem_par.mesh_ext))
+        else:
+            dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}mesh_rr_node_S{s:04d}"+sfem_par.mesh_ext))
+            
+        file_name = "/fourier_{f}_S{s:04d}_F{m:04d}".format(f=field_name,s=s,m=mF)+sfem_par.mesh_ext
+        component_d_section_s_fourier_mF_a = field[:, n:n+dn, :]#field[n:n+dn, a+2*d, :]
+        with open(path_out+file_name,"wb") as f:
+            f.write(np.ascontiguousarray(rearrange(component_d_section_s_fourier_mF_a, 'T N (a D) -> T a D N', a = 2)))
+            # needs to be (T a D N(s))
         n += dn
 
 #=========== saving in "fourier format"
 
-def write_fourier(sfem_par,field,path_out,field_name='',I=0): #field is shape (N a*D MF)
+#def write_fourier(sfem_par,field,path_out,field_name='',I=0): #field is shape (N a*D MF)
+#    """
+#    Function that writes a field of shape (N a*D MF) in SFEMaNS Fourier format
+#    args:
+#        sfem_par: SFEMaNS parameter (contains mesh_type, mesh_ext, path_to_mesh information)
+#        field: the one to be saved, of shape (N a*D MF)
+#        path_out
+#        field_name
+#        I: value of iteration to be saved
+#    """
+#    if field.shape[1] == 3 or field.shape[1] == 1:
+#        raise TypeError("Error in write_fourier: it seems like your field is in phys format and not fourier")
+#    if field_name == '':
+#        field_name = sfem_par.field
+#    n = 0
+#
+#    D = field.shape[1]//2
+#
+#    for s in range(sfem_par.S):
+#        dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}mesh_gauss_rj_S{s:04d}"+sfem_par.mesh_ext))
+#        #dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}rr_S{s:04d}"+sfem_par.mesh_ext))
+#        for d in range(D):
+#            for a,axis in enumerate(['c','s']):
+#                if D > 1:
+#                    file_name = "/fourier_{f}{i}{ax}_S{s:04d}_I{m:04d}".format(f=field_name,i=d+1,ax=axis,s=s,m=I)+sfem_par.mesh_ext
+#                elif D == 1:
+#                    file_name = "/fourier_{f}{ax}_S{s:04d}_I{m:04d}".format(f=field_name,ax=axis,s=s,m=I)+sfem_par.mesh_ext
+#                component_d_section_s_fourier_mF_a = field[n:n+dn, a+2*d, :]
+#                with open(path_out+file_name,"wb") as f:
+#                    f.write(np.ascontiguousarray(component_d_section_s_fourier_mF_a.T)) # needs to be (MF, N(s))
+#        n += dn
+
+def write_fourier(sfem_par,field,path_out,field_name='',I=0,from_gauss=False): #field is shape (N a*D MF)
     """
     Function that writes a field of shape (N a*D MF) in SFEMaNS Fourier format
     args:
@@ -48,8 +114,10 @@ def write_fourier(sfem_par,field,path_out,field_name='',I=0): #field is shape (N
         field_name
         I: value of iteration to be saved
     """
+
     if field.shape[1] == 3 or field.shape[1] == 1:
-        raise TypeError("Error in write_fourier: it seems like your field is in phys format and not fourier")
+        raise TypeError("Error in write_fourier_per_mode: it seems like your field is in phys format and not fourier")
+
     if field_name == '':
         field_name = sfem_par.field
     n = 0
@@ -57,18 +125,18 @@ def write_fourier(sfem_par,field,path_out,field_name='',I=0): #field is shape (N
     D = field.shape[1]//2
 
     for s in range(sfem_par.S):
-        dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}mesh_gauss_rj_S{s:04d}"+sfem_par.mesh_ext))
-        #dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}rr_S{s:04d}"+sfem_par.mesh_ext))
-        for d in range(D):
-            for a,axis in enumerate(['c','s']):
-                if D > 1:
-                    file_name = "/fourier_{f}{i}{ax}_S{s:04d}_I{m:04d}".format(f=field_name,i=d+1,ax=axis,s=s,m=I)+sfem_par.mesh_ext
-                elif D == 1:
-                    file_name = "/fourier_{f}{ax}_S{s:04d}_I{m:04d}".format(f=field_name,ax=axis,s=s,m=I)+sfem_par.mesh_ext
-                component_d_section_s_fourier_mF_a = field[n:n+dn, a+2*d, :]
-                with open(path_out+file_name,"wb") as f:
-                    f.write(np.ascontiguousarray(component_d_section_s_fourier_mF_a.T)) # needs to be (MF, N(s))
+        if from_gauss:
+            dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}mesh_gauss_rj_S{s:04d}"+sfem_par.mesh_ext))
+        else:
+            dn = len(np.fromfile(sfem_par.path_to_mesh+f"/{sfem_par.mesh_type}mesh_rr_node_S{s:04d}"+sfem_par.mesh_ext))
+            
+        file_name = "/fourier_{f}_S{s:04d}_I{m:04d}".format(f=field_name,s=s,m=I)+sfem_par.mesh_ext
+        component_d_section_s_fourier_mF_a = field[n:n+dn, :, :]#field[n:n+dn, a+2*d, :]
+        with open(path_out+file_name,"wb") as f:
+            f.write(np.ascontiguousarray(rearrange(component_d_section_s_fourier_mF_a, 'N (a D) MF -> MF a D N', a = 2)))
+            # needs to be (MF a D N(s))
         n += dn
+
 
 #=========== saving in "phys" format
 

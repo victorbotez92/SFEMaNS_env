@@ -62,9 +62,54 @@ def get_phys(par,I):# output shape is (N D Theta)
                 data[d,:,N_slice[s-1]:N_slice[s]]=np.copy(new_data[:,:])
     return rearrange(data, 'D theta N -> N D theta')
 
-def get_fourier(par,I,MF=[],fourier_type=["c","s"]):# output shape is (N a*D MF)
-    #N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
-    N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_gauss_rj_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+#def get_fourier(par,I,MF=[],fourier_type=["c","s"]):# output shape is (N a*D MF)
+#    #N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+#    N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_gauss_rj_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+#    N_tot = np.sum(np.array(N))
+#    N_slice=np.cumsum(np.array(N))
+#
+#    if MF == []:
+#        MF = np.arange(par.MF)
+#    elif  isinstance(MF, int):
+#        MF = [MF]
+#        
+#    n_mF = len(MF)
+#
+#    data = np.zeros(shape=(par.D,n_mF*2,N_tot))
+#
+#    for s in range(par.S):
+#        n = N[s]*par.MF
+#        for d in range(par.D):
+#            for a,axis in enumerate(fourier_type):
+#                array_a = 2*np.arange(len(MF))+a
+#                if par.D > 1:
+#                    path=par.path_bins+"/fourier_{f}{i}{ax}_S{s:04d}_I{m:04d}".format(f=par.field,i=d+1,ax=axis,s=s,m=I)+par.mesh_ext
+#                elif par.D == 1:
+#                    path=par.path_bins+"/fourier_{f}{ax}_S{s:04d}_I{m:04d}".format(f=par.field,ax=axis,s=s,m=I)+par.mesh_ext
+#
+#                new_data = np.array(get_file(path,n))
+#                new_data = rearrange(new_data,'(MF n) -> MF n', MF=par.MF)
+#                if s==0:
+#                    data[d,array_a,:N_slice[s]]=np.copy(new_data[MF,:])
+#                else:
+#                    data[d,array_a,N_slice[s-1]:N_slice[s]]=np.copy(new_data[MF,:])
+#    return rearrange(data, "D (MF a) N -> N (D a) MF", a=len(fourier_type))
+
+
+def get_fourier(par,I,MF=[],fourier_type=["c","s"],from_gauss=False):
+    """
+    Get SFEMaNS snapshots which output is type fourier
+    par => SFEMaNS_object
+    I => iteration
+    from_gauss = False => assumes snapshots are on nodes
+
+    output ==> [N (a D) MF]
+    """
+    if from_gauss:
+        N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_gauss_rj_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+    else:
+        N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_rr_node_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+
     N_tot = np.sum(np.array(N))
     N_slice=np.cumsum(np.array(N))
 
@@ -72,56 +117,83 @@ def get_fourier(par,I,MF=[],fourier_type=["c","s"]):# output shape is (N a*D MF)
         MF = np.arange(par.MF)
     elif  isinstance(MF, int):
         MF = [MF]
-        
+
     n_mF = len(MF)
 
-    data = np.zeros(shape=(par.D,n_mF*2,N_tot))
+    data = np.zeros(shape=(N_tot,2*par.D,n_mF))
+    # data = np.zeros(shape=(par.D,n_mF*2,N_tot))
 
     for s in range(par.S):
-        n = N[s]*par.MF
-        for d in range(par.D):
-            for a,axis in enumerate(fourier_type):
-                array_a = 2*np.arange(len(MF))+a
-                if par.D > 1:
-                    path=par.path_bins+"/fourier_{f}{i}{ax}_S{s:04d}_I{m:04d}".format(f=par.field,i=d+1,ax=axis,s=s,m=I)+par.mesh_ext
-                elif par.D == 1:
-                    path=par.path_bins+"/fourier_{f}{ax}_S{s:04d}_I{m:04d}".format(f=par.field,ax=axis,s=s,m=I)+par.mesh_ext
+        n = N[s]*par.MF*2*par.D
+        path=par.path_bins+"/fourier_{f}_S{s:04d}_I{m:04d}".format(f=par.field,s=s,m=I)+par.mesh_ext
+        new_data = np.array(get_file(path,n))
+        if s==0:
+            data[:N_slice[s], :, :] = rearrange(new_data,'(MF a D N) -> N (a D) MF', MF=par.MF, D=par.D, a=2)#np.copy(new_data)
+        else:
+            data[N_slice[s-1]:N_slice[s], :, :] = rearrange(new_data,'(MF a D N) -> N (a D) MF', MF=par.MF, D=par.D, a=2)#np.copy(new_data)
 
-                new_data = np.array(get_file(path,n))
-                new_data = rearrange(new_data,'(MF n) -> MF n', MF=par.MF)
-                if s==0:
-                    data[d,array_a,:N_slice[s]]=np.copy(new_data[MF,:])
-                else:
-                    data[d,array_a,N_slice[s-1]:N_slice[s]]=np.copy(new_data[MF,:])
-    return rearrange(data, "D (MF a) N -> N (D a) MF", a=len(fourier_type))
+    return data
 
 
-def get_fourier_per_mode(par,mF,T=-1,fourier_type=["c","s"]):# output shape is (T D a N)
+#def get_fourier_per_mode(par,mF,T=-1,fourier_type=["c","s"]):# output shape is (T D a N)
+#    """
+#    arange this head
+#    """
+#    #N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+#    N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_gauss_rj_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+#    N_tot = np.sum(np.array(N))
+#    N_slice=np.cumsum(np.array(N))
+#    if T == -1:
+#        T = len(par.I)
+#    data = np.zeros((T,par.D,2,N_tot))
+#    for s in range(par.S):
+#        n = N[s]*par.I
+#        for d in range(par.D):
+#            for a,axis in enumerate(fourier_type):
+#                if par.D > 1:
+#                    path=par.path_bins+"/fourier_{f}{i}{ax}_S{s:04d}_F{m:04d}".format(f=par.field,i=d+1,ax=axis,s=s,m=mF)+par.mesh_ext
+#                elif par.D == 1:
+#                    path=par.path_bins+"/fourier_{f}{ax}_S{s:04d}_F{m:04d}".format(f=par.field,ax=axis,s=s,m=mF)+par.mesh_ext
+#
+#                new_data = np.array(get_file(path,n))
+#                new_data = rearrange(new_data,'(T n) -> T n', T=T)#new_data.reshape(T,len(new_data)//T)
+#                if s==0:
+#                    data[:,d,a,:N_slice[s]]=np.copy(new_data[:T,:])
+#                else:
+#                    data[:,d,a,N_slice[s-1]:N_slice[s]]=np.copy(new_data[:T,:])
+#    return data
+
+def get_fourier_per_mode(par,mF,T=-1,fourier_type=["c","s"],from_gauss=False):
     """
-    arange this head
+    Get SFEMaNS snapshots which output is type fourier_per_mode
+    par => SFEMaNS_object
+    mF => Fourier mode
+    T (int) => quantity of snapshots to import (imports everything by default)
+    from_gauss = False => assumes snapshots are on nodes
+
+    output ==> [T N (a D)]
     """
-    #N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
-    N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_gauss_rj_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+    if from_gauss:
+        N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_gauss_rj_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+    else:
+        N = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_rr_node_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+
     N_tot = np.sum(np.array(N))
     N_slice=np.cumsum(np.array(N))
+
     if T == -1:
         T = len(par.I)
-    data = np.zeros((T,par.D,2,N_tot))
+    data = np.zeros((T, N_tot, par.D*2))
+    
     for s in range(par.S):
-        n = N[s]*par.I
-        for d in range(par.D):
-            for a,axis in enumerate(fourier_type):
-                if par.D > 1:
-                    path=par.path_bins+"/fourier_{f}{i}{ax}_S{s:04d}_F{m:04d}".format(f=par.field,i=d+1,ax=axis,s=s,m=mF)+par.mesh_ext
-                elif par.D == 1:
-                    path=par.path_bins+"/fourier_{f}{ax}_S{s:04d}_F{m:04d}".format(f=par.field,ax=axis,s=s,m=mF)+par.mesh_ext
+        n = N[s]*T*2*par.D
+        path=par.path_bins+"/fourier_{f}_S{s:04d}_F{m:04d}".format(f=par.field,s=s,m=mF)+par.mesh_ext
+        new_data = np.array(get_file(path,n))
+        if s==0:
+            data[:, :N_slice[s], :] = rearrange(new_data,'(T a D N) -> T N (a D)', D=par.D, a=2, T=T)#np.copy(new_data)
+        else:
+            data[:, N_slice[s-1]:N_slice[s], :] = rearrange(new_data,'(T a D N) -> T N (a D)', D=par.D, a=2, T=T)#np.copy(new_data)
 
-                new_data = np.array(get_file(path,n))
-                new_data = rearrange(new_data,'(T n) -> T n', T=T)#new_data.reshape(T,len(new_data)//T)
-                if s==0:
-                    data[:,d,a,:N_slice[s]]=np.copy(new_data[:T,:])
-                else:
-                    data[:,d,a,N_slice[s-1]:N_slice[s]]=np.copy(new_data[:T,:])
     return data
 
 

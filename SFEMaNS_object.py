@@ -358,7 +358,7 @@ class SFEMaNS_par:
         # include_suite(sfem_par,path_suites,name_suites, field, tab_I)
         # return sfem_par
 
-    def add_bins(self, path_binaries, field=None, D=None, replace=False):
+    def add_bins(self, path_binaries, field=None, D=None, replace=False, from_gauss=False):
         if self.suites == True:
             raise Exception("your SFEMaNS parameter does already contain information about suites, please create a new one for binaries")
         if self.bins == True:
@@ -382,33 +382,39 @@ class SFEMaNS_par:
                     
                     len_char = len(elm)
                     test_field = elm[:len_char-1]
-                    if (f"{test_field}1" in matching_files) and (f"{test_field}2" in matching_files) and (f"{test_field}3" in matching_files):
-                        list_possible_fields.append((elm[:len_char-1], 3))
-                    else:
-                        list_possible_fields.append((elm, 1))
+                    #if (f"{test_field}1" in matching_files) and (f"{test_field}2" in matching_files) and (f"{test_field}3" in matching_files):
+                    #    list_possible_fields.append((elm[:len_char-1], 3))
+                    #else:
+                    #    list_possible_fields.append((elm, 1))
+                    list_possible_fields.append(elm)
 
                 list_possible_fields = list(set(list_possible_fields)) 
 
             search_string_1 = "fourier_"
-            search_string_2 = "c_S0000_F0000"
+            search_string_2 = "_S0000_F0000"
+            #search_string_2 = "c_S0000_F0000"
             fourier_per_mode = len([file.name for file in Path(f"{path_binaries}/").iterdir() if ((search_string_1 in file.name) and (search_string_2 in file.name) and (self.mesh_ext in file.name))])>0
             if fourier_per_mode:
                 matching_files = [file.name for file in Path(f"{path_binaries}/").iterdir() if ((search_string_1 in file.name) and (search_string_2 in file.name) and (self.mesh_ext in file.name))]
                 matching_files = [elm.split(search_string_1)[1].split(search_string_2)[0] for elm in matching_files]
                 matching_files = list(set(matching_files))
                 for i,elm in enumerate(matching_files):
-                    if elm[-1] == '1' and i+2<len(matching_files) and matching_files[i+1][-1] == '2' and matching_files[i+2][-1] == '3':
-                        list_possible_fields.append((elm[:-1], 3))
-                    elif elm[-1] == '2' and i+1<len(matching_files) and matching_files[i+1][-1] == '3' and (i-1 >= 0) and matching_files[i-1][-1] == '1':
-                        continue
-                    elif elm[-1] == '3' and (i-2 >= 0) and matching_files[i-1][-1] == '2' and matching_files[i-2][-1] == '1':
-                        continue
-                    else:
-                        list_possible_fields.append((elm, 1))
+                    #if elm[-1] == '1' and i+2<len(matching_files) and matching_files[i+1][-1] == '2' and matching_files[i+2][-1] == '3':
+                    #    list_possible_fields.append((elm[:-1], 3))
+                    #elif elm[-1] == '2' and i+1<len(matching_files) and matching_files[i+1][-1] == '3' and (i-1 >= 0) and matching_files[i-1][-1] == '1':
+                    #    continue
+                    #elif elm[-1] == '3' and (i-2 >= 0) and matching_files[i-1][-1] == '2' and matching_files[i-2][-1] == '1':
+                    #    continue
+                    #else:
+                    #    list_possible_fields.append((elm, 1))
+                    list_possible_fields.append(elm)
+
                 list_possible_fields = list(set(list_possible_fields)) 
                 
             search_string_1 = "fourier_"
-            search_string_2 = "c_S0000_I"
+            search_string_2 = "_S0000_I"
+            #search_string_2 = "c_S0000_I"
+
             fourier = len([file.name for file in Path(f"{path_binaries}/").iterdir() if ((search_string_1 in file.name) and (search_string_2 in file.name) and (self.mesh_ext in file.name))])>0
             if fourier:
                 matching_files = [file.name for file in Path(f"{path_binaries}/").iterdir() if ((search_string_1 in file.name) and (search_string_2 in file.name) and (self.mesh_ext in file.name))]
@@ -419,20 +425,23 @@ class SFEMaNS_par:
                     
                     len_char = len(elm)
                     test_field = elm[:len_char-1]
-                    if (f"{test_field}1" in matching_files) and (f"{test_field}2" in matching_files) and (f"{test_field}3" in matching_files):
-                        list_possible_fields.append((elm[:len_char-1], 3))
-                    else:
-                        list_possible_fields.append((elm, 1))
+                    #if (f"{test_field}1" in matching_files) and (f"{test_field}2" in matching_files) and (f"{test_field}3" in matching_files):
+                    #    list_possible_fields.append((elm[:len_char-1], 3))
+                    #else:
+                    #    list_possible_fields.append((elm, 1))
+                    list_possible_fields.append(elm)
 
-            field = input(f"possible fields and their dimension {list_possible_fields}")
+            #field = input(f"possible fields and their dimension {list_possible_fields}")
+            field = input(f"possible fields {list_possible_fields}")
+            D = int(input("associated dimension"))
             bool_found_field = False
             i = 0
-            while not bool_found_field:
-                if list_possible_fields[i][0] == field:
-                    bool_found_field = True
-                    D = list_possible_fields[i][1]
-                else:
-                    i += 1
+#            while not bool_found_field:
+#                if list_possible_fields[i][0] == field:
+#                    bool_found_field = True
+#                    D = list_possible_fields[i][1]
+#                else:
+#                    i += 1
 
         else:
             if D is None:
@@ -442,11 +451,13 @@ class SFEMaNS_par:
         phys = len([file.name for file in Path(f"{path_binaries}/").iterdir() if (search_string in file.name) and (field in file.name)])>0
         
         search_string_1 = "fourier_"
-        search_string_2 = "c_S0000_F0000"
+        search_string_2 = "_S0000_F0000"
+        #search_string_2 = "c_S0000_F0000"
         fourier_per_mode = len([file.name for file in Path(f"{path_binaries}/").iterdir() if ((search_string_1 in file.name) and (search_string_2 in file.name) and (field in file.name) and (self.mesh_ext in file.name))])>0
         
         search_string_1 = "fourier_"
-        search_string_2 = "c_S0000_I"
+        search_string_2 = "_S0000_I"
+        #search_string_2 = "c_S0000_I"
         fourier = len([file.name for file in Path(f"{path_binaries}/").iterdir() if ((search_string_1 in file.name) and (search_string_2 in file.name) and (field in file.name) and (self.mesh_ext in file.name))])>0
 
         if not (phys or fourier or fourier_per_mode):
@@ -467,18 +478,26 @@ class SFEMaNS_par:
             tab_I = np.sort(np.array(tab_I))
             
             #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
-            N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}mesh_gauss_rj_S0000{self.mesh_ext}'))
-            if D == 3:
-                char = '1'
-            elif D == 1:
-                char = ''
-            directory = f'{path_binaries}/phys_{field}{char}_S0000_I{tab_I[0]:04d}{self.mesh_ext}'
+            #N = len(np.fromfile(self.path_to_mesh+f'/{self.mesh_type}mesh_gauss_rj_S0000{self.mesh_ext}'))
+            if from_gauss:
+                N = len(np.fromfile(self.path_to_mesh+f"/{self.mesh_type}mesh_gauss_rj_S0000"+self.mesh_ext))
+            else:
+                N = len(np.fromfile(self.path_to_mesh+f"/{self.mesh_type}mesh_rr_node_S0000"+self.mesh_ext))
+            #if D == 3:
+            #    char = '1'
+            #elif D == 1:
+            #    char = ''
+            #directory = f'{path_binaries}/phys_{field}{char}_S0000_I{tab_I[0]:04d}{self.mesh_ext}'
+            directory = f'{path_binaries}/phys_{field}_S0000_I{tab_I[0]:04d}{self.mesh_ext}'
+
             mode = np.fromfile(directory)
-            MF = ((len(mode)//N)+1)//2            
+            MF = ((len(mode)//N//D)+1)//2            
+            #MF = ((len(mode)//N)+1)//2            
 
         if fourier:
             search_string_1 = f"fourier_{field}"
-            search_string_2 = "c_S0000_I"
+            search_string_2 = "_S0000_I"
+            #search_string_2 = "c_S0000_I"
             matching_files = [file.name for file in Path(f"{path_binaries}/").iterdir() if ((search_string_1 in file.name) and (search_string_2 in file.name) and (self.mesh_ext in file.name))]
             
             # tab_I = np.sort(np.array([int((elm.split('.',0)).split('I')[-1])]))
@@ -486,38 +505,51 @@ class SFEMaNS_par:
             tab_I = list(set(tab_I))
             tab_I = np.sort(np.array(tab_I))
             
-            N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}mesh_gauss_rj_S0000{self.mesh_ext}'))
-            #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
-            if D == 3:
-                char = '1'
-            elif D == 1:
-                char = ''
-            directory = f'{path_binaries}/fourier_{field}{char}c_S0000_I{tab_I[0]:04d}{self.mesh_ext}'
-            mode = np.fromfile(directory)
-            if (not MF is None) and MF != len(mode)//N:
-                raise ValueError(f"phys file and fourier files do not match (computed MF = {MF} on one hand and MF = {len(mode)//N} on the other hand)")
+            if from_gauss:
+                N = len(np.fromfile(self.path_to_mesh+f"/{self.mesh_type}mesh_gauss_rj_S0000"+self.mesh_ext))
             else:
-                MF = len(mode)//N
+                N = len(np.fromfile(self.path_to_mesh+f"/{self.mesh_type}mesh_rr_node_S0000"+self.mesh_ext))
+            #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}mesh_gauss_rj_S0000{self.mesh_ext}'))
+            #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
+            #if D == 3:
+            #    char = '1'
+            #elif D == 1:
+            #    char = ''
+            #directory = f'{path_binaries}/fourier_{field}{char}c_S0000_I{tab_I[0]:04d}{self.mesh_ext}'
+            directory = f'{path_binaries}/fourier_{field}_S0000_I{tab_I[0]:04d}{self.mesh_ext}'
+            mode = np.fromfile(directory)
+            if (not MF is None) and MF != len(mode)//N//D//2:
+                raise ValueError(f"phys file and fourier files do not match (computed MF = {MF} on one hand and MF = {len(mode)//N//D//2} on the other hand)")
+            else:
+                MF = len(mode)//N//D//2
+                #MF = len(mode)//N
 
         if fourier_per_mode:
             search_string_1 = f"fourier_{field}"
             search_string_2 = "_S0000_F"
             matching_files = [file.name for file in Path(f"{path_binaries}/").iterdir() if ((search_string_1 in file.name) and (search_string_2 in file.name) and (self.mesh_ext in file.name))]
 
-            if (not MF is None) and MF != len(matching_files)//2//D:
-                raise ValueError(f"phys/fourier and fourier_per_mode files do not match (computed MF = {MF} on one hand and MF = {len(matching_files)//2//D} on the other hand)")
+            if (not MF is None) and MF != len(matching_files):
+            #if (not MF is None) and MF != len(matching_files)//2//D:
+                raise ValueError(f"phys/fourier and fourier_per_mode files do not match (computed MF = {MF} on one hand and MF = {len(matching_files)} on the other hand)")
             else:
-                MF != len(matching_files)//2//D
+                MF == len(matching_files)//2//D
 
-            N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}mesh_gauss_rj_S0000{self.mesh_ext}'))
+            if from_gauss:
+                N = len(np.fromfile(self.path_to_mesh+f"/{self.mesh_type}mesh_gauss_rj_S0000"+self.mesh_ext))
+            else:
+                N = len(np.fromfile(self.path_to_mesh+f"/{self.mesh_type}mesh_rr_node_S0000"+self.mesh_ext))
+            #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}mesh_gauss_rj_S0000{self.mesh_ext}'))
             #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
-            if D == 3:
-                char = '1'
-            elif D == 1:
-                char = ''
-            directory = f'{path_binaries}/fourier_{field}{char}c_S0000_F0000{self.mesh_ext}'
+            #if D == 3:
+            #    char = '1'
+            #elif D == 1:
+            #    char = ''
+            #directory = f'{path_binaries}/fourier_{field}{char}c_S0000_F0000{self.mesh_ext}'
+            directory = f'{path_binaries}/fourier_{field}_S0000_F0000{self.mesh_ext}'
             mode = np.fromfile(directory)
-            nb_I = len(mode)//N
+            nb_I = len(mode)//N//D//2
+            #nb_I = len(mode)//N
             if (not tab_I is None) and len(tab_I) != nb_I:
                 raise ValueError(f"phys/fourier and fourier_per_mode files do not match (found {len(tab_I)} iterations on one hand and {nb_I} iterations on the other hand)")
             else:

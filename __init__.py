@@ -34,7 +34,7 @@ def help_SFEMaNS():
     print()
     print()
     print('============ TO DO ============')
-    print('add divergence, grad for vectors, check read suite, add write suite')
+    print('add divergence, grad for vectors, check read suite, add write suite, fix phys bins')
 
 def return_cmap():
     import matplotlib as mpl
