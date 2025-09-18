@@ -1,9 +1,11 @@
 import numpy as np
 
 from einops import rearrange, einsum
-import os,array
+import os,array,sys
 
-from SFEMaNS_object import define_mesh
+cur_path = os.getcwd()
+#sys.path.append(cur_path+'/../')
+from ..SFEMaNS_object import define_mesh
 
 #================Get meshes
 def get_mesh_gauss(par):

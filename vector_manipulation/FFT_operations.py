@@ -224,3 +224,42 @@ def FFT_EUCLIDIAN_PROD(field_1, field_2, W_gauss):
     field_product = field_product.sum(axis=1)
 
     return 2*np.pi*np.sum(field_product*W_gauss)
+
+######### USEFUL FUNCTION FOR POD GALERKIN EFFICIENCY
+def SIMPLE_SCAL_VECT_PROD(raw_field_1, mF, field_2, exponent=1):
+    """Compute the product between a scalar on one Fourier mode and a vector field (can be either on nodes or Gauss points) imported in Fourier space.
+    Requirements: 
+        numpy
+    Args:
+        field_1[X, 2]
+        field_2[X, 6, list_modes.size()]
+        exponent (optional): 1 if field_1*field_2, -1 if 1/field_1*field_2
+    Returns:
+        field_out[X, 6, list_modes.size()]: scalar product kept on nodes or Gauss points.
+    """
+
+    if mF > 0:
+
+        field_1 = np.empty((raw_field_1.shape[0], raw_field_1.shape[1], 1))
+        field_1[:, :, 0] = raw_field_1[:, :]
+
+        field_prod = np.zeros(field_2.shape)
+        #======== Term n°1
+        field_prod[:, ::2, :-mF] += (field_1[:, np.array([0]), :]*field_2[:, ::2, mF:] + field_1[:, np.array([1]), :]*field_2[:, 1::2, mF:])
+        field_prod[:, ::2, 1:mF+1] += (field_1[:, np.array([0]), :]*field_2[:, ::2, 0:mF][:, :, ::-1] + field_1[:, np.array([1]), :]*field_2[:, 1::2, 0:mF][:, :, ::-1])
+
+        #======== Term n°2
+        field_prod[:, ::2, mF:] += (field_1[:, np.array([1]), :]*field_2[:, 1::2, :-mF] - field_1[:, np.array([0]), :]*field_2[:, ::2, :-mF])
+
+        #======== Term n°3
+        field_prod[:, 1::2, mF:] += (field_1[:, np.array([0]), :]*field_2[:, 1::2, :-mF] + field_1[:, np.array([1]), :]*field_2[:, ::2, :-mF])
+
+        #======== Term n°4
+        field_prod[:, 1::2, :-mF] += (field_1[:, np.array([0]), :]*field_2[:, 1::2, mF:] - field_1[:, np.array([1]), :]*field_2[:, 0::2, mF:])
+        field_prod[:, 1::2, 1:mF+1] += -(field_1[:, np.array([0]), :]*field_2[:, 1::2, 0:mF][:, :, ::-1] - field_1[:, np.array([1]), :]*field_2[:, ::2, 0:mF][:, :, ::-1])
+
+        return 1/2*field_prod
+
+    elif mF == 0:
+        
+        return field_2*((raw_field_1[:, 0]).reshape((raw_field_1.shape[0], 1, 1)))
