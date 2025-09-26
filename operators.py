@@ -142,7 +142,39 @@ def curl(field_nodes, mesh, R_gauss, list_modes = None):
 
 
 
+def div(field_nodes, mesh, R_gauss, list_modes=None):
+    """Compute the divergence of a vector field INITIALLY ON NODES.
+    Requirements: 
+        numpy, einops
+    Args:
+        field_nodes[mesh.nn, 6, list_modes.size()]
+        mesh
+        list_modes (optional): if none specified, by default set to np.arange(field_nodes.shape[-1])
+    Returns:
+        field_gauss[n_gauss, 2, list_modes.size()]: divergence of field_nodes evaluated on Gauss points.
+    """
 
+    if list_modes is None:
+        list_modes = np.arange(field_nodes.shape[-1])
+
+    MF = len(list_modes)
+    
+    div_gauss = np.zeros((mesh.l_G, mesh.me, 2, field_nodes.shape[-1])) #l_G, me, 6, mF with 6 corresponding to the 6 types for vector
+
+    list_modes = list_modes.reshape(1, 1, MF) #1 1 mF
+    rays = rearrange(R_gauss, '(me l_G) -> l_G me 1', l_G=mesh.l_G) #l_G me 1
+    # mesh.jj with shape nw me and has values in [0, nn-1]
+    
+    div_gauss[:, :, 0, :] += 1/rays*einsum((mesh.R.reshape(mesh.R.shape[0], 1, 1)*field_nodes)[mesh.jj, 0, :], mesh.dw[0, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
+    div_gauss[:, :, 1, :] += 1/rays*einsum((mesh.R.reshape(mesh.R.shape[0], 1, 1)*field_nodes)[mesh.jj, 1, :], mesh.dw[0, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
+
+    div_gauss[:, :, 0, :] += list_modes/rays*einsum(field_nodes[mesh.jj, 3, :], mesh.ww, 'nw me mF, nw l_G -> l_G me mF')
+    div_gauss[:, :, 1, :] += -list_modes/rays*einsum(field_nodes[mesh.jj, 2, :], mesh.ww, 'nw me mF, nw l_G -> l_G me mF')
+
+    div_gauss[:, :, 0, :] += einsum(field_nodes[mesh.jj, 4, :], mesh.dw[1, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
+    div_gauss[:, :, 1, :] += einsum(field_nodes[mesh.jj, 5, :], mesh.dw[1, :, :, :], 'nw me mF, nw l_G me -> l_G me mF')
+
+    return rearrange(div_gauss, "l_G me c MF -> (me l_G) c MF")
 
 def grad(field_nodes, mesh, R_gauss, list_modes = None):
     """Compute the gradient of a scalar field INITIALLY ON NODES.

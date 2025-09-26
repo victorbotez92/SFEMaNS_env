@@ -5,7 +5,7 @@ __version__ = "0.2.0"
 
 from .SFEMaNS_object import SFEMaNS_par, define_mesh
 
-from .operators import gauss_to_nodes, nodes_to_gauss, curl, grad, advection_vect
+from .operators import gauss_to_nodes, nodes_to_gauss, curl, div, grad, advection_vect
 from .FFT_operations import fourier_to_phys, phys_to_fourier
 from .FFT_operations import FFT_CROSS_PROD, FFT_DOT_PROD, FFT_SCAL_VECT_PROD, FFT_EUCLIDIAN_PROD, SIMPLE_SCAL_VECT_PROD
 
@@ -26,7 +26,7 @@ def help_SFEMaNS():
     print('WARNING: R, Z, W from get_mesh_gauss ==> shape (me l_G)')
     print()
     print('=========Operators and FFT/IFFT==========')
-    print('gauss_to_nodes, nodes_to_gauss, curl, grad, advection_vect')
+    print('gauss_to_nodes, nodes_to_gauss, curl, div, grad, advection_vect')
     print('fourier_to_phys, phys_to_fourier')
     print()
     print('=========Vector products===========')
