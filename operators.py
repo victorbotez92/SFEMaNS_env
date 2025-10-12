@@ -28,7 +28,7 @@ def nodes_to_gauss(field, mesh): # must have shape (N D MF)
     #     return einsum(field, mesh.ww, 'n_snap nw me, nw l_G -> n_snap l_G me')
     
 
-def gauss_to_nodes(field_in, mesh, W):  #field of shape ((l_G me) D MF)
+def gauss_to_nodes(field_in, mesh):  #field of shape ((l_G me) D MF)
     """
     Sends gauss points to field to nodes
 
@@ -50,6 +50,9 @@ def gauss_to_nodes(field_in, mesh, W):  #field of shape ((l_G me) D MF)
 #==================BUILDING MASS MATRIX
 
     # Step 1: effective weights (W * detJ) → shape: (lG, me)
+    W = einsum(mesh.R[mesh.jj], mesh.ww, mesh.rj, 'nw me, nw l_G, l_G me -> l_G me')
+    W = rearrange(W, 'l_G me -> (me l_G)')
+
     W_eff = rearrange(W, '(me l_G) -> l_G me', l_G=mesh.l_G) * mesh.rj  # shape: (l_G, me)
     nw = mesh.nw
     # Step 2: Triplet assembly arrays (mesh.jj is (nw, me))
@@ -108,7 +111,7 @@ def send_to_triangle(field, mesh):
 
 
 
-def curl(field_nodes, mesh, R_gauss, list_modes = None):
+def curl(field_nodes, mesh, list_modes = None):
     """Compute the curl of a vector field INITIALLY ON NODES.
     Requirements: 
         numpy, einops
@@ -119,6 +122,10 @@ def curl(field_nodes, mesh, R_gauss, list_modes = None):
     Returns:
         field_gauss[n_gauss, 6, list_modes.size()]: curl of field_nodes evaluated on Gauss points.
     """
+
+    R_gauss = einsum(mesh.R[mesh.jj], mesh.ww, 'nw me, nw l_G -> l_G me')
+    R_gauss = rearrange(R_gauss, 'l_G me -> (me l_G)')
+
     if list_modes is None:
         list_modes = np.arange(field_nodes.shape[-1])
 
@@ -142,7 +149,7 @@ def curl(field_nodes, mesh, R_gauss, list_modes = None):
 
 
 
-def div(field_nodes, mesh, R_gauss, list_modes=None):
+def div(field_nodes, mesh, list_modes=None, one_mode = None):
     """Compute the divergence of a vector field INITIALLY ON NODES.
     Requirements: 
         numpy, einops
@@ -150,13 +157,19 @@ def div(field_nodes, mesh, R_gauss, list_modes=None):
         field_nodes[mesh.nn, 6, list_modes.size()]
         mesh
         list_modes (optional): if none specified, by default set to np.arange(field_nodes.shape[-1])
+        one_mode (optional): set it to an integer mF if divergence performed on an array (N D T) with T index of snapshots, only composed of Fourier modes mF
     Returns:
         field_gauss[n_gauss, 2, list_modes.size()]: divergence of field_nodes evaluated on Gauss points.
     """
 
-    if list_modes is None:
-        list_modes = np.arange(field_nodes.shape[-1])
+    R_gauss = einsum(mesh.R[mesh.jj], mesh.ww, 'nw me, nw l_G -> l_G me')
+    R_gauss = rearrange(R_gauss, 'l_G me -> (me l_G)')
 
+    if one_mode is None:
+        if list_modes is None:
+            list_modes = np.arange(field_nodes.shape[-1])
+    else:
+        list_modes = one_mode*np.ones(field_nodes.shape[-1])
     MF = len(list_modes)
     
     div_gauss = np.zeros((mesh.l_G, mesh.me, 2, field_nodes.shape[-1])) #l_G, me, 6, mF with 6 corresponding to the 6 types for vector
@@ -176,7 +189,7 @@ def div(field_nodes, mesh, R_gauss, list_modes=None):
 
     return rearrange(div_gauss, "l_G me c MF -> (me l_G) c MF")
 
-def grad(field_nodes, mesh, R_gauss, list_modes = None):
+def grad(field_nodes, mesh, list_modes = None):
     """Compute the gradient of a scalar field INITIALLY ON NODES.
     Requirements: 
         numpy, einops
@@ -187,6 +200,10 @@ def grad(field_nodes, mesh, R_gauss, list_modes = None):
     Returns:
         field_gauss[n_gauss, 6, list_modes.size()]: curl of field_nodes evaluated on Gauss points.
     """
+
+    R_gauss = einsum(mesh.R[mesh.jj], mesh.ww, 'nw me, nw l_G -> l_G me')
+    R_gauss = rearrange(R_gauss, 'l_G me -> (me l_G)')
+
     if list_modes is None:
         list_modes = np.arange(field_nodes.shape[-1])
 
@@ -209,7 +226,7 @@ def grad(field_nodes, mesh, R_gauss, list_modes = None):
 
     return rearrange(grad_gauss, "l_G me c MF -> (me l_G) c MF")
 
-def advection_vect(field_nodes_1, field_nodes_2, mesh, R_gauss, list_modes = None):
+def advection_vect(field_nodes_1, field_nodes_2, mesh, list_modes = None):
     """Compute (A.grad)B with A and B vector fields ON NODES.
     Requirements: 
         numpy, einops
@@ -220,6 +237,10 @@ def advection_vect(field_nodes_1, field_nodes_2, mesh, R_gauss, list_modes = Non
     Returns:
         field_gauss[n_gauss, 6, list_modes.size()]: curl of field_nodes evaluated on Gauss points.
     """
+
+    R_gauss = einsum(mesh.R[mesh.jj], mesh.ww, 'nw me, nw l_G -> l_G me')
+    R_gauss = rearrange(R_gauss, 'l_G me -> (me l_G)')
+
     if field_nodes_1.shape[1] != 6:
         raise ValueError("field_nodes_1 should be vector (6 components on 2nd dimension)")
     if field_nodes_2.shape[1] != 6:
