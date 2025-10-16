@@ -31,12 +31,13 @@ opt surface
 
 methods:
     - "rm_duplicate()"
-    - "build_tab_sym()" (requires to do rm_duplicate() before)
+    - "find_duplicate()"
+    - "build_tab_sym()"
 
     """
     def __init__(self, path_to_mesh, mesh_type, mesh_ext = None, surface=False):
         #============== USEFUL STUFF FOR IS NONE
-        self.tab_rm = None #if rm_duplicate present or not
+        self.tab_duplicates = None #if rm_duplicate present or not
         #============== USEFUL STUFF FOR IS NONE
         directory = Path(path_to_mesh)
         # search_string = f"{mesh_type}rr_"
@@ -157,7 +158,8 @@ methods:
         else:
             self.surface = False
 
-    def rm_duplicate(self,hmin=1e-5):
+    def find_duplicate(self, hmin=1e-5):
+        print("Looking for duplicates in mesh")
     #============== FINDING DUPLICATE INDICES
         indices = []
         for i in range(self.jj.max()+1):
@@ -167,7 +169,7 @@ methods:
             if np.sqrt(np.sum((np.array([r, z]).reshape(2, 1)-test_tab)**2, axis=0)).min()<hmin:
                 tab = np.where(np.sqrt(np.sum((np.array([r, z]).reshape(2, 1)-test_tab)**2, axis=0))<hmin)[0]
                 if len(tab) != 1:
-                    raise ValueError(f"ERROR IN RM_DUPLICATE in loop {i}: found too many mixed points, check mesh.R[{tab}] and mesh.Z[{tab}]")
+                    raise ValueError(f"ERROR IN FIND_DUPLICATE in loop {i}: found too many mixed points, check mesh.R[{tab}] and mesh.Z[{tab}]")
                 # assert len(tab) == 1
                 if tab[0] >= i:
                     j = tab[0] + 1
@@ -183,30 +185,62 @@ methods:
             #     print(f"doing {i}")
 
         indices = np.array(indices)
-    #============== REMOVING DUPLICATES FROM R & Z
-        self.R = np.delete(self.R, indices[:, 1])
-        self.Z = np.delete(self.Z, indices[:, 1])
 
+        self.tab_duplicates = indices[:, :]
+        # self.tab_rm = indices[:, 1]
+
+    def rm_duplicate(self,hmin=1e-5):
+
+        if self.tab_duplicates is None:
+            self.find_duplicate()
+
+    #============== REMOVING DUPLICATES FROM R & Z
+        # self.R = np.delete(self.R, indices[:, 1])
+        # self.Z = np.delete(self.Z, indices[:, 1])
+        self.R = np.delete(self.R, self.tab_duplicates[:, 1])
+        self.Z = np.delete(self.Z, self.tab_duplicates[:, 1])
     #============== GIVING PROPER INDICES FOR mesh.jj
         for i in range(len(indices)):
-            j = indices[i, 1]
+            j = self.tab_duplicates[i, 1]
             tab_replace = np.where(self.jj==j)
-            self.jj[tab_replace] = indices[i, 0]
+            self.jj[tab_replace] = self.tab_duplicates[i, 0]
 
             if self.surface:
                 tab_replace = np.where(self.jjs==j)
-                self.jjs[tab_replace] = indices[i, 0]
+                self.jjs[tab_replace] = self.tab_duplicates[i, 0]
 
-        self.tab_rm = indices[:, 1]
-        
+
     def build_tab_sym(self, epsilon_z_0=1e-7):
 
-        if self.tab_rm is None:
-            raise NameError('Make sure to first remove the duplicates')
+        if self.tab_duplicates is None:
+            self.find_duplicate()
+            # raise NameError('Make sure to first remove the duplicates')
         
-        partial_sort = np.argsort(self.R**3+self.Z**2)
-        mask_z_is_not_0 = np.abs(self.Z[partial_sort])>epsilon_z_0
+        # partial_sort = np.argsort(self.R**3+self.Z**2)
+        # mask_z_is_not_0 = np.abs(self.Z[partial_sort])>epsilon_z_0
         
+        # flip_partial_sort = np.copy(partial_sort)
+        # restriction_z_is_not_0 = np.zeros(mask_z_is_not_0.sum(), dtype=np.int32)
+
+        # restriction_z_is_not_0[1::2] = partial_sort[mask_z_is_not_0][::2]
+        # restriction_z_is_not_0[::2] = partial_sort[mask_z_is_not_0][1::2]
+
+        # flip_partial_sort[mask_z_is_not_0] = restriction_z_is_not_0
+
+        # inverse_partial_sort = np.empty(partial_sort.shape[0],dtype=np.int32)
+        # inverse_partial_sort[partial_sort] = np.arange(partial_sort.shape[0])
+
+        # tab_sym = flip_partial_sort[inverse_partial_sort]
+
+        # self.tab_sym = tab_sym
+        print("Building tab_sym")
+        alt_R, alt_Z = np.delete(self.R, self.tab_duplicates[:, 1]), np.delete(self.Z, self.tab_duplicates[:, 1])
+        epsilon_z_0 = 1e-7
+
+
+        partial_sort = np.argsort(alt_R**3+alt_Z**2)
+        mask_z_is_not_0 = np.abs(alt_Z[partial_sort])>epsilon_z_0
+
         flip_partial_sort = np.copy(partial_sort)
         restriction_z_is_not_0 = np.zeros(mask_z_is_not_0.sum(), dtype=np.int32)
 
@@ -218,8 +252,13 @@ methods:
         inverse_partial_sort = np.empty(partial_sort.shape[0],dtype=np.int32)
         inverse_partial_sort[partial_sort] = np.arange(partial_sort.shape[0])
 
-        tab_sym = flip_partial_sort[inverse_partial_sort]
+        alt_tab_sym = flip_partial_sort[inverse_partial_sort]
 
+        tab_sym = np.empty(self.R.shape, dtype=np.int32)
+        mask = np.ones(self.R.shape, dtype=bool)
+        mask[self.tab_duplicates[:, 1]] = False
+        tab_sym[mask] = alt_tab_sym
+        tab_sym[self.tab_duplicates[:, 1]] = tab_sym[self.tab_duplicates[:, 0]]
         self.tab_sym = tab_sym
 
 #==================================================================================
