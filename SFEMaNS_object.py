@@ -605,3 +605,43 @@ class SFEMaNS_par:
         self.D = D
         # include_binaries(sfem_par,phys,fourier_per_mode,fourier,tab_I,MF)
         # return sfem_par
+
+class m_family:
+    """
+    class designed to define a field (vector or scalar) wrt its family to save memory + computational time
+    __init__: family, nb_shifts, MF
+    add_data: field
+    """
+    def __init__(self, family, nb_shifts, MF):
+        self.family=family
+        self.nb_shifts=nb_shifts
+        self.MF = MF
+        if family*2%nb_shifts==0:
+            self.correlate_cos_sine = False
+            list_modes = family+nb_shifts*np.arange(MF)
+            self.list_modes_plus = list_modes
+
+        else:
+            self.correlate_cos_sine = True
+            list_modes_plus = family + nb_shifts*np.arange(MF)
+            list_modes_minus = -family + nb_shifts*(1+np.arange(MF))
+            list_modes = np.sort(np.concatenate((list_modes_plus, list_modes_minus)))
+            list_modes = list_modes[list_modes<MF]
+            list_modes_plus = list_modes[(list_modes-family)%nb_shifts==0]
+            list_modes_minus = list_modes[(list_modes+family)%nb_shifts==0]
+            self.list_modes_plus = list_modes_plus
+            self.list_modes_minus = list_modes_minus
+
+        self.list_modes = list_modes
+
+    def init_data(self, mesh, D, on_gauss=True):
+        if on_gauss:
+            self.data = np.zeros([mesh.l_G*mesh.me, 2*D, self.list_modes])
+        else:
+            self.data = np.zeros([mesh.R.shape[0], 2*D, self.list_modes])
+
+    def add_data(self, field):
+        if self.MF != field.shape[-1]:
+            print(f"WARNING: MF in m_family object {self.MF} does not match MF of field {field.shape[-1]}")
+        
+        self.data = field[:, :, self.list_modes]
