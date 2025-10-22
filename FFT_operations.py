@@ -200,6 +200,61 @@ def FFT_SCAL_VECT_PROD(field_1, field_2, list_modes=None, pad = True, exponent=1
     field_prod = phys_to_fourier(field_prod_phys)
     return field_prod[:, :, np.array(list_modes)]
 
+def FFT_SCAL_VECT_PROD_families(field_1, field_2, list_modes=None, pad = True, exponent=1):
+    """Compute the product between a scalar and a vector field (can be either on nodes or Gauss points) imported in Fourier space.
+    Requirements: 
+        numpy
+    Args:
+        field_1[X, 2, list_modes.size()]
+        field_2[X, 6, list_modes.size()]
+        list_modes (optional): if none specified, by default set to np.arange(field_nodes.shape[-1])
+        exponent (optional): 1 if field_1*field_2, -1 if 1/field_1*field_2
+    Returns:
+        field_out[X, 6, list_modes.size()]: scalar product kept on nodes or Gauss points.
+    """
+
+    if field_1.data.shape[0] != field_2.data.shape[0]:
+        raise TypeError("the two fields have different shapes, make sure they are both either on nodes or Gauss")
+
+    nb_mF = field_1.MF//field_1.nb_shifts
+
+    # if list_modes is None:
+    #     assert field_1.shape[-1] == field_2.shape[-1] and field_1.shape[0] == field_2.shape[0]
+    #     mF_max = field_1.shape[-1]
+    #     list_modes = np.arange(mF_max)
+    # else:
+    #     mF_max = list_modes[-1] + 1
+
+    if pad:
+        mF_max = int(3.0/2.0*nb_mF)
+    else:
+        mF_max = nb_mF
+
+
+    field_1_pad = np.zeros((field_1.data.shape[0], field_1.data.shape[1], mF_max))
+    field_1_pad[:, :, :field_1.data.shape[-1]//2] += field_1.data[:, :, ::2]
+    field_1_pad[:, :, :(field_1.data.shape[-1]+1)//2] += field_1.data[:, :, 1::2]
+    # field_1_pad = np.concatenate((field_1_pad, np.zeros((field_1.data.shape[0], field_1.data.shape[1], mF_max%field_1.nb_shifts))), axis=2)
+
+    field_1_phys = fourier_to_phys(field_1_pad)/field_1.nb_shifts
+    del field_1_pad
+
+
+    field_2_pad = np.zeros((field_2.data.shape[0], field_2.data.shape[1], mF_max))
+    field_2_pad[:, :, :field_2.data.shape[-1]//2] += field_2.data[:, :, ::2]
+    field_2_pad[:, :, :(field_2.data.shape[-1]+1)//2] += field_2.data[:, :, 1::2]
+    # field_2_pad = np.zeros((field_2.shape[0], field_2.shape[1], mF_max))
+    # field_2_pad[:, :, np.array(list_modes)] = field_2
+    # field_2_phys = fourier_to_phys(field_2_pad)
+    field_2_phys = fourier_to_phys(field_2_pad)/field_2.nb_shifts
+    del field_2_pad
+
+    field_prod_phys = np.zeros((field_1_phys.shape[0], 3, field_1_phys.shape[2]))
+
+    field_prod_phys[:, :, :] = (field_1_phys[:, :, :])**exponent*field_2_phys[:, :, :]
+
+    field_prod = phys_to_fourier(field_prod_phys)/field_1.nb_shifts
+    return field_prod[:, :, :nb_mF]
 
 def FFT_EUCLIDIAN_PROD(field_1, field_2, W_gauss):
     """Compute the euclidian product between two fields on Gauss points (i.e scalar product and then volume integral without normalization)
@@ -249,7 +304,9 @@ def SIMPLE_SCAL_VECT_PROD(raw_field_1, mF, field_2, exponent=1):
         field_prod[:, ::2, 1:mF+1] += (field_1[:, np.array([0]), :]*field_2[:, ::2, 0:mF][:, :, ::-1] + field_1[:, np.array([1]), :]*field_2[:, 1::2, 0:mF][:, :, ::-1])
 
         #======== Term n°2
-        field_prod[:, ::2, mF:] += (field_1[:, np.array([1]), :]*field_2[:, 1::2, :-mF] - field_1[:, np.array([0]), :]*field_2[:, ::2, :-mF])
+        # solved sign problem
+        # field_prod[:, ::2, mF:] += (field_1[:, np.array([1]), :]*field_2[:, 1::2, :-mF] - field_1[:, np.array([0]), :]*field_2[:, ::2, :-mF])
+        field_prod[:, ::2, mF:] += (field_1[:, np.array([0]), :]*field_2[:, ::2, :-mF] - field_1[:, np.array([1]), :]*field_2[:, 1::2, :-mF])
 
         #======== Term n°3
         field_prod[:, 1::2, mF:] += (field_1[:, np.array([0]), :]*field_2[:, 1::2, :-mF] + field_1[:, np.array([1]), :]*field_2[:, ::2, :-mF])
