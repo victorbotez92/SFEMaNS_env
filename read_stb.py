@@ -1,7 +1,8 @@
 import numpy as np
+# from memory_profiler import profile
 
 from einops import rearrange, einsum
-import os,array,sys
+import os,array,sys,gc
 
 from .SFEMaNS_object import define_mesh
 
@@ -37,7 +38,7 @@ def get_file(path,n):
     data = array.array('d')
     with open(path, 'rb') as fin:
         data.fromfile(fin, n)
-    return data
+    return np.asarray(data)
 
 #===============Functions to get data from stbp
 def get_phys(par,I):# output shape is (N D Theta)
@@ -166,6 +167,7 @@ def get_fourier(par,I,MF=[],fourier_type=["c","s"],from_gauss=False):
 #                    data[:,d,a,N_slice[s-1]:N_slice[s]]=np.copy(new_data[:T,:])
 #    return data
 
+# @profile
 def get_fourier_per_mode(par,mF,T=-1,fourier_type=["c","s"],from_gauss=False):
     """
     Get SFEMaNS snapshots which output is type fourier_per_mode
@@ -184,19 +186,50 @@ def get_fourier_per_mode(par,mF,T=-1,fourier_type=["c","s"],from_gauss=False):
     N_tot = np.sum(np.array(N))
     N_slice=np.cumsum(np.array(N))
 
-    if T == -1:
-        T = len(par.I)
-    data = np.zeros((T, N_tot, par.D*2))
+    if isinstance(T, list) or isinstance(T, np.ndarray):
+        nb_T = len(T)
+        list_T = np.asarray(T)
+        # list_T = np.array(T)
+        nb_tot = len(par.I)
+
+    elif isinstance(T, int) or isinstance(T, np.int64):
+        if T == -1:
+            list_T = np.arange(len(par.I))
+            nb_T = len(par.I)
+            nb_tot = nb_T
+
+        else:
+            list_T = np.arange(T)
+            nb_T = T
+            nb_tot = nb_T
+
+    else:
+        raise ValueError(f"inconsistent T={T} in get_fourier_per_mode ==> found type {type(T)}")
+
+
+    data = np.empty((nb_T, N_tot, par.D*2))
     
     for s in range(par.S):
-        n = N[s]*T*2*par.D
-        path=par.path_bins+"/fourier_{f}_S{s:04d}_F{m:04d}".format(f=par.field,s=s,m=mF)+par.mesh_ext
-        new_data = np.array(get_file(path,n))
-        if s==0:
-            data[:, :N_slice[s], :] = rearrange(new_data,'(T a D N) -> T N (a D)', D=par.D, a=2, T=T)#np.copy(new_data)
-        else:
-            data[:, N_slice[s-1]:N_slice[s], :] = rearrange(new_data,'(T a D N) -> T N (a D)', D=par.D, a=2, T=T)#np.copy(new_data)
+        n = N[s]*nb_tot*2*par.D
 
+        path=par.path_bins+"/fourier_{f}_S{s:04d}_F{m:04d}".format(f=par.field,s=s,m=mF)+par.mesh_ext
+        
+        new_data = get_file(path,n)
+        arr = new_data.reshape(nb_tot, 2, par.D, -1)[list_T, :, :, :]
+        del new_data
+        gc.collect()
+
+        arr = arr.transpose(0, 3, 1, 2)
+        arr = arr.reshape(arr.shape[0], arr.shape[1], arr.shape[2] * arr.shape[3]) #    '(T a D N) -> T N (a D)'
+
+        if s==0:
+            data[:, :N_slice[s], :] = arr#np.copy(new_data)
+
+        else:
+            data[:, N_slice[s-1]:N_slice[s], :] = arr#np.copy(new_data)
+
+        del arr
+        gc.collect()
     return data
 
 
