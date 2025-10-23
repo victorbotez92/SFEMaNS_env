@@ -13,6 +13,7 @@ from .FFT_operations import FFT_CROSS_PROD, FFT_DOT_PROD, FFT_SCAL_VECT_PROD, FF
 from .read_suite import get_suite
 from .read_stb import get_mesh_gauss, get_phys, get_fourier, get_fourier_per_mode
 from .write_stb import write_phys, write_fourier, write_fourier_per_mode
+from .write_suite import write_suite_ns
 
 print("help_SFEMaNS()/return_cmap()")
 
@@ -21,7 +22,7 @@ def help_SFEMaNS():
     print()
     print('SFEMaNS_par, define_mesh')
     print('get_suite, get_phys, get_fourier, get_fourier_per_mode', 'get_mesh_gauss')
-    print('write_phys, write_fourier, write_fourier_per_mode')
+    print('write_suite_ns, write_phys, write_fourier, write_fourier_per_mode')
     print()
     print('WARNING: R, Z, W from get_mesh_gauss ==> shape (me l_G)')
     print()
