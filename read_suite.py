@@ -82,7 +82,7 @@ def read_in_suite(path,mF, first_offset, n_components=6, record_stack_lenght=7):
         field = np.fromfile(file,dtype=np.float64,count=num_elements).reshape(n_nodes,n_components,order='F')
     return field
 
-def get_data_from_suites(par,I,mF_to_read,record_stack_lenght=7, get_gauss_points=True,stack_domains=True,opt_extension=''):
+def get_data_from_suites(sfem_par,I,mF_to_read,record_stack_lenght=7, opt_extension=''):
     """
     path_to_all_suites (str) : path to the directory where all the suites are stored
     path_to_mesh (str)       : path to the directory where Xmesh_jj are stored
@@ -90,7 +90,6 @@ def get_data_from_suites(par,I,mF_to_read,record_stack_lenght=7, get_gauss_point
     S (int)                  : number of domains
     field_name_in_file (str) : field to read, must be in ["u","p","H","B"]
     record_stack_lenght(int) : see 'read_in_suite' function
-    get_gauss_points (bool)  : if true the field is evaluated on gauss points
     stack_domains (bool)     : if true the domains are stacked along a single array direction
      
     returns field :
@@ -99,32 +98,32 @@ def get_data_from_suites(par,I,mF_to_read,record_stack_lenght=7, get_gauss_point
 
 
     # select between suite_ns and suite_maxwell
-    if par.field == "u":
+    if sfem_par.field == "u":
         # suite_kind="suite_ns"#f"{opt_extension}ns"
         mesh_kind = "vv"
         first_offset=2
         nb_components=6
         
-    elif par.field == "p" :
+    elif sfem_par.field == "p" :
         # suite_kind="suite_ns"
-        mesh_kind = "vv"
+        mesh_kind = "pp"
         first_offset=4
         nb_components=2
         
-    elif par.field == "H" :
+    elif sfem_par.field == "H" :
         # suite_kind="suite_maxwell"
         mesh_kind = "H"
         first_offset=2
         nb_components=6
         
-    elif par.field == "B": 
+    elif sfem_par.field == "B": 
         # suite_kind="suite_maxwell"
         mesh_kind = "H"
         first_offset=4
         nb_components=6
         
     else:
-        print("Field",par.field,"not found, or not implemented")
+        print("Field ",sfem_par.field," not found, or not implemented")
         return
     
     suite_names = []
@@ -133,95 +132,38 @@ def get_data_from_suites(par,I,mF_to_read,record_stack_lenght=7, get_gauss_point
         add_str = ''
     else:
         add_str = f'_I{I:03d}'
-    for s in range(par.S):
-        # suite_names.append(f'{suite_kind}_S{s:03d}{add_str}{par.mesh_ext}')
-        suite_names.append(f'{par.name_suites}S{s:03d}{add_str}{par.mesh_ext}')
 
-    suite_files = [par.path_suites+'/'+elm for elm in suite_names]
-
-    Nfile = len(suite_files)
-    Nt = Nfile//par.S
-    fields=[]
-    for mF in mF_to_read:
-        field_per_mF = []
-        for path in suite_files:
-            f = read_in_suite(path, mF, first_offset, nb_components, record_stack_lenght)
-            field_per_mF.append(f)
-            
-        fields.append(field_per_mF) # eventually (MF S N (D a)
-    TEMP=[]
-    for mF in mF_to_read:
-        TEMP_PER_MF = []
-        for s in range(par.S):
-            # TEMP_PER_MF.append( np.asarray(fields[mF, :, s*Nt:(s+1)*Nt])  )
-
-            TEMP_PER_MF.append( np.asarray(fields[mF][:][s*Nt:(s+1)*Nt][0])  )
-        TEMP.append(TEMP_PER_MF)
-    if get_gauss_points :
-        #get mesh info
-        ME = [ read_mesh_info(par.path_to_mesh+f"/{mesh_kind}mesh_info_S{s:04d}.txt")[2] for s in range(par.S) ]  
-        n_w = read_mesh_info(par.path_to_mesh+f"/{mesh_kind}mesh_info_S0000.txt")[0]
-        l_G = read_mesh_info(par.path_to_mesh+f"/{mesh_kind}mesh_info_S0000.txt")[1]
-        
-        
-        # get global connectivity, and test function weights
-        mesh_ext= [f for f in listdir(par.path_to_mesh) if isfile(join(par.path_to_mesh, f)) if '.FEM' in f][0].split(".")[-2]+".FEM"
-        mesh_jj = [ np.fromfile(par.path_to_mesh+f"/{mesh_kind}mesh_jj_S{s:04d}"+par.mesh_ext,dtype=np.int32).reshape(n_w,ME[s],order="F") 
-                   for s in range(par.S) ] 
-        mesh_ww = [ np.fromfile(par.path_to_mesh+f"/{mesh_kind}mesh_gauss_ww_S{s:04d}"+par.mesh_ext,dtype=np.float64).reshape(n_w,l_G,order="F") 
-                   for s in range(par.S) ] 
-        
-        # node point to gauss points
-        TEMP_gauss =[]   
-        for mF in range(len(TEMP)):
-            TEMP_gauss_per_mF = []
-            for s in range(par.S):
-                #arange field by triangle
-                X = np.asarray( [TEMP[mF][s][mesh_jj[s][i]-1,:] for i in range(n_w)] )
-                field_gauss = einsum(X,mesh_ww[s],'nw me d, nw l_G -> me l_G d ')
-                TEMP_gauss_per_mF.append( rearrange(field_gauss, "me l_G d -> (me l_G) d") )
-            TEMP_gauss.append(TEMP_gauss_per_mF)
-        TEMP = TEMP_gauss
+    nnodes = []
     
-    if stack_domains:
-        output=[]
-        for TEMP_PER_MF in TEMP:
-            # output_per_mF = []
-            # for t in range(Nt):
-                # output_per_mF.append(np.vstack([TEMP_PER_MF[s][t] for s in range(par.S)]))
-            # output_per_mF.append(np.vstack([TEMP_PER_MF[s] for s in range(par.S)]))
-            # output.append(output_per_mF)
-            output.append(np.vstack([TEMP_PER_MF[s] for s in range(par.S)]))
-        # data has now shape (MF,T,N_node_points_tot), domains are stacked : 0 then 1 then ... 
-        return  np.asarray(output)
-    else: 
-        return TEMP 
-    
-def read_mesh_info(path):
-    with open(path) as file:
-        line = file.readlines()
-        values = line[1::2][:4]
-        n_w = int(values[0])
-        l_G = int(values[1])
-        me  = int(values[2])
-        n_p = int(values[3])
-    return n_w,l_G,me,n_p
+    for s in range(sfem_par.S):
+        suite_name = sfem_par.path_suites+'/'+f'{sfem_par.name_suites}S{s:03d}{add_str}{sfem_par.mesh_ext}'
+        data_compute_nn = read_in_suite(suite_name, 0, first_offset, nb_components, record_stack_lenght)
+        nnodes.append(data_compute_nn.shape[0])
+    nnodes = np.asarray(nnodes)
 
+    field_out = np.zeros((nnodes.sum(), nb_components, mF_to_read.max()+1))
+    n_inf = 0
+    for s in range(sfem_par.S):
+        n_sup = n_inf + nnodes[s]
+        suite_name = sfem_par.path_suites+'/'+f'{sfem_par.name_suites}S{s:03d}{add_str}{sfem_par.mesh_ext}'
+        for mF in mF_to_read:
+            field_out[n_inf:n_sup, :, mF] = read_in_suite(suite_name, mF, first_offset, nb_components, record_stack_lenght)
+        n_inf = n_sup
 
-def get_suite(par,I,MF=None,record_stack_lenght=7, get_gauss_points=False,stack_domains=True):
+    return field_out
+
+def get_suite(sfem_par,I,MF=None,record_stack_lenght=7, get_gauss_points=False,stack_domains=True):
     if isinstance(I, int):
         I = [I]
     if MF is None:
-        MF = np.arange(par.MF)
+        MF = np.arange(sfem_par.MF)
     elif isinstance(MF, int):
-        print(f'WARNING: you chose to import only mF = {MF}, be sure it is defined')
+        print(f'WARNING: you chose to import only mF = {MF}, be sure it is defined/what you wanted to do')
         MF = [MF]
     
     f_out = []
     for i in I:
-        f = get_data_from_suites(par,i,MF,record_stack_lenght=record_stack_lenght, get_gauss_points=get_gauss_points,
-        stack_domains=stack_domains)
-        f_out.append(rearrange(f,'MF N D_a -> N D_a MF'))
-
-    f_out = np.array(f_out)
+        f_out.append(get_data_from_suites(sfem_par,i,MF,record_stack_lenght=record_stack_lenght))
+    
+    f_out = np.asarray(f_out)
     return f_out
