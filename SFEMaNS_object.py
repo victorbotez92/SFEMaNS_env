@@ -349,6 +349,8 @@ class SFEMaNS_par:
         matching_files = [elm.split(search_string_1)[1].split(self.mesh_ext)[0] for elm in matching_files]
         matching_files = list(set(matching_files))
         tab_I = np.sort(np.array(matching_files))
+        if len(tab_I) == 0:
+            raise FileNotFoundError(f"no file of the form {name_suites} found in {path_suites}/ including {self.mesh_ext}")
         
         self.suites = True
         self.type_suite = "ns"
@@ -356,8 +358,46 @@ class SFEMaNS_par:
         self.name_suites = name_suites
         self.field = field
         self.tab_I = tab_I
-        # include_suite(sfem_par,path_suites,name_suites, field, tab_I)
-        # return sfem_par
+
+        list_MF_found = []
+        for elm_I in tab_I:
+            list_MF_per_I = []
+            for s in range(self.S):
+                path_I_s = self.path_suites + self.name_suites + f"S{s:03d}_" + f"I{elm_I}" + self.mesh_ext
+
+                with open(path_I_s,'rb') as file:
+                    
+                    # get record lenght
+                    record_length_bytes = file.read(4)
+                    record_length = np.frombuffer(record_length_bytes, dtype=np.int32)[0]
+                    
+                    #assuming double precision
+                    num_elements = record_length // 4
+                    field = np.fromfile(file,dtype=np.int32,count=num_elements)
+                    time = np.frombuffer(field[:2].tobytes(), dtype=np.float64)[0]
+                    nb_procs_S = field[2]
+                    nb_procs_F = field[3]
+                    size_list_modes = field[4]
+                    MF = nb_procs_F * size_list_modes
+                    list_MF_per_I.append(MF)
+            if np.asarray(list_MF_per_I).std() != 0:
+                raise ValueError(f"found the inconsistent following amount of Fourier modes at {elm_I} for the different subsections: {list_MF_per_I}")
+
+            list_MF_found.append(list_MF_per_I[0])  
+        list_MF_found = np.asarray(list_MF_found)
+        if np.std(list_MF_found) != 0:
+            print("WARNING: different amounts of Fourier modes were found.")
+            print(f"Lowest is {list_MF_found.min()} at I{tab_I[np.argmin(list_MF_found)]}")
+            print(f"Highest is {list_MF_found.max()} at I{tab_I[np.argmax(list_MF_found)]}")
+
+            self.MF = list_MF_found.min()
+            self.consistent_MF = False
+        else:
+            self.MF = list_MF_found[0]
+            self.consistent_MF = True
+
+
+
 
     def add_suite_maxwell(self, path_suites, name_suites="suite_maxwell_", field=None, D=None, replace=False):
         if self.bins == True:
@@ -394,8 +434,46 @@ class SFEMaNS_par:
         self.name_suites = name_suites
         self.field = field
         self.tab_I = tab_I
-        # include_suite(sfem_par,path_suites,name_suites, field, tab_I)
-        # return sfem_par
+        if len(tab_I) == 0:
+            raise FileNotFoundError(f"no file of the form {name_suites} found in {path_suites}/ including {self.mesh_ext}")
+
+        list_MF_found = []
+        for elm_I in tab_I:
+            list_MF_per_I = []
+            for s in range(self.S):
+                path_I_s = self.path_suites + self.name_suites + f"S{s:03d}_" + f"I{elm_I}" + self.mesh_ext
+
+                with open(path_I_s,'rb') as file:
+                    
+                    # get record lenght
+                    record_length_bytes = file.read(4)
+                    record_length = np.frombuffer(record_length_bytes, dtype=np.int32)[0]
+                    
+                    #assuming double precision
+                    num_elements = record_length // 4
+                    field = np.fromfile(file,dtype=np.int32,count=num_elements)
+                    time = np.frombuffer(field[:2].tobytes(), dtype=np.float64)[0]
+                    nb_procs_S = field[2]
+                    nb_procs_F = field[3]
+                    size_list_modes = field[4]
+                    MF = nb_procs_F * size_list_modes
+                    list_MF_per_I.append(MF)
+            if np.asarray(list_MF_per_I).std() != 0:
+                raise ValueError(f"found the inconsistent following amount of Fourier modes at {elm_I} for the different subsections: {list_MF_per_I}")
+
+            list_MF_found.append(list_MF_per_I[0])  
+        list_MF_found = np.asarray(list_MF_found)
+        if np.std(list_MF_found) != 0:
+            print("WARNING: different amounts of Fourier modes were found.")
+            print(f"Lowest is {list_MF_found.min()} at I{tab_I[np.argmin(list_MF_found)]}")
+            print(f"Highest is {list_MF_found.max()} at I{tab_I[np.argmax(list_MF_found)]}")
+
+            self.MF = list_MF_found.min()
+            self.consistent_MF = False
+        else:
+            self.MF = list_MF_found[0]
+            self.consistent_MF = True
+
 
     def add_bins(self, path_binaries, field=None, D=None, replace=False, from_gauss=False):
         if self.suites == True:
