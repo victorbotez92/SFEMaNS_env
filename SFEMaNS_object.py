@@ -111,6 +111,7 @@ methods:
 
         nn = np.max(mesh_jj) + 1
         self.nn = nn
+        self.nn_per_S = nodes_per_S
 
         mesh_dw = np.concatenate([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_dw_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(2,n_w,l_G,ME[s],order="F") 
                         for s in range(S) ], axis=3)
