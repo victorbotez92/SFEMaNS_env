@@ -282,6 +282,16 @@ dict_dimension = {
     'phi':1}
 
 class SFEMaNS_par:
+    """
+    class SFEMaNS parameter which is necessary for every operation.
+__init__ : takes path_to_mesh and mesh_type (initialize required information for SFEMaNS parameter
+add_suite_ns : takes path_suites, name_suites, field, D, replace=False
+add_suite_maxwell : same
+add_bins : takes path_binaries, field, D, replace=False
+
+One SFEMaNS parameter can only account for one mesh_type and then one path containing suites_ns, or one path with suite_mxw, or one path with any kind of binaries
+    """
+ 
     def __init__(self, path_to_mesh, mesh_type=None):
 
     #===============Making sure meshes exist
@@ -349,6 +359,10 @@ class SFEMaNS_par:
         matching_files = [file.name for file in Path(f"{path_suites}/").iterdir() if ((search_string_1 in file.name) and (self.mesh_ext in file.name))]
         matching_files = [elm.split(search_string_1)[1].split(self.mesh_ext)[0] for elm in matching_files]
         matching_files = list(set(matching_files))
+        search_string = f"{name_suites}S000{self.mesh_ext}"
+        no_I_matching_file = [file.name for file in Path(f"{path_suites}/").iterdir() if (search_string in file.name)]
+        if len(no_I_matching_file) == 1:
+            matching_files.append(-1)
         tab_I = np.sort(np.array(matching_files))
         if len(tab_I) == 0:
             raise FileNotFoundError(f"no file of the form {name_suites} found in {path_suites}/ including {self.mesh_ext}")
@@ -364,7 +378,10 @@ class SFEMaNS_par:
         for elm_I in tab_I:
             list_MF_per_I = []
             for s in range(self.S):
-                path_I_s = self.path_suites + '/' +  self.name_suites + f"S{s:03d}_" + f"I{elm_I}" + self.mesh_ext
+                if elm_I != -1:
+                    path_I_s = self.path_suites + '/' +  self.name_suites + f"S{s:03d}_" + f"I{elm_I}" + self.mesh_ext
+                elif elm_I == -1:
+                    path_I_s = self.path_suites + '/' +  self.name_suites + f"S{s:03d}" + self.mesh_ext
 
                 with open(path_I_s,'rb') as file:
                     
@@ -427,6 +444,10 @@ class SFEMaNS_par:
         matching_files = [file.name for file in Path(f"{path_suites}/").iterdir() if ((search_string_1 in file.name) and (self.mesh_ext in file.name))]
         matching_files = [elm.split(search_string_1)[1].split(self.mesh_ext)[0] for elm in matching_files]
         matching_files = list(set(matching_files))
+        search_string = f"{name_suites}S000{self.mesh_ext}"
+        no_I_matching_file = [file.name for file in Path(f"{path_suites}/").iterdir() if (search_string in file.name)]
+        if len(no_I_matching_file) == 1:
+            matching_files.append(-1)
         tab_I = np.sort(np.array(matching_files))
         
         self.suites = True
@@ -442,7 +463,10 @@ class SFEMaNS_par:
         for elm_I in tab_I:
             list_MF_per_I = []
             for s in range(self.S):
-                path_I_s = self.path_suites + self.name_suites + f"S{s:03d}_" + f"I{elm_I}" + self.mesh_ext
+                if elm_I != -1:
+                    path_I_s = self.path_suites + '/' +  self.name_suites + f"S{s:03d}_" + f"I{elm_I}" + self.mesh_ext
+                elif elm_I == -1:
+                    path_I_s = self.path_suites + '/' +  self.name_suites + f"S{s:03d}" + self.mesh_ext
 
                 with open(path_I_s,'rb') as file:
                     
