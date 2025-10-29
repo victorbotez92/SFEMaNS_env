@@ -201,7 +201,8 @@ methods:
         self.R = np.delete(self.R, self.tab_duplicates[:, 1])
         self.Z = np.delete(self.Z, self.tab_duplicates[:, 1])
     #============== GIVING PROPER INDICES FOR mesh.jj
-        for i in range(len(indices)):
+        for i in range(len(self.tab_duplicates)):
+        #for i in range(len(indices)):
             j = self.tab_duplicates[i, 1]
             tab_replace = np.where(self.jj==j)
             self.jj[tab_replace] = self.tab_duplicates[i, 0]

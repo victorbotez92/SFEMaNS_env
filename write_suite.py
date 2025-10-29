@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def write_suite_ns(sfem_par, vv_mesh, pp_mesh,  path_out, field_name="suite_ns", I=0,
+def write_suite_ns(sfem_par, vv_mesh, pp_mesh,  path_out, field_name="suite_ns_", I=0,
                    un = None, un_m1 = None, pn = None, pn_m1 = None, incpn = None, incpn_m1 = None):
     """
     function to write a vector field in SFEMaNS suite_ns format
@@ -32,11 +32,18 @@ def write_suite_ns(sfem_par, vv_mesh, pp_mesh,  path_out, field_name="suite_ns",
     
     n_inf_vv = 0
     n_inf_pp = 0
+
     for s in range(sfem_par.S):
         n_sup_vv = n_inf_vv + vv_mesh.nn_per_S[s]
         n_sup_pp = n_inf_pp + pp_mesh.nn_per_S[s]
-
-        path = path_out + f"/{field_name}_S{s:03d}_I{I:03d}{sfem_par.mesh_ext}"
+        if I >= 0:
+            path = path_out + f"/{field_name}S{s:03d}_I{I:03d}{sfem_par.mesh_ext}"
+            print(f"Writing file {field_name}S{s:03d}_I{I:03d}{sfem_par.mesh_ext}")
+        elif I == -1:
+            path = path_out + f"/{field_name}S{s:03d}{sfem_par.mesh_ext}"
+            print(f"Writing file {field_name}S{s:03d}{sfem_par.mesh_ext}")
+        else:
+            raise IndexError(f"Incorrect input iteration {I} ==> should be positive integer or -1")
 
         dummy_pp = np.zeros((n_sup_pp - n_inf_pp + 1, 2), dtype=np.float64)
         dummy_vv = np.zeros((n_sup_vv - n_inf_vv + 1, 2), dtype=np.float64)
@@ -65,7 +72,7 @@ def write_suite_ns(sfem_par, vv_mesh, pp_mesh,  path_out, field_name="suite_ns",
             file.write(np.int32(record_length).tobytes())
             
             for mF in range(sfem_par.MF):
-                print("Writing mF=", mF)
+                #print("Writing mF=", mF)
     
                 record_length = 4  # int32 (4 bytes)
                 file.write(np.int32(record_length).tobytes())
