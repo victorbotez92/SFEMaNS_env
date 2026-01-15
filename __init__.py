@@ -6,6 +6,7 @@ __version__ = "0.2.0"
 from .SFEMaNS_object import SFEMaNS_par, define_mesh, m_family
 
 from .operators import gauss_to_nodes, nodes_to_gauss, curl, div, grad, advection_vect, advection_vect_families
+from .solver import solve_laplace
 from .FFT_operations import fourier_to_phys, phys_to_fourier
 from .FFT_operations import FFT_CROSS_PROD, FFT_DOT_PROD, FFT_SCAL_VECT_PROD, FFT_SCAL_VECT_PROD_families, FFT_EUCLIDIAN_PROD, SIMPLE_SCAL_VECT_PROD
 
@@ -29,13 +30,14 @@ def help_SFEMaNS():
     print('=========Operators and FFT/IFFT==========')
     print('gauss_to_nodes, nodes_to_gauss, curl, div, grad, advection_vect')
     print('fourier_to_phys, phys_to_fourier')
+    print('solve_laplace')
     print()
     print('=========Vector products===========')
     print('FFT_CROSS_PROD, FFT_DOT_PROD, FFT_SCAL_VECT_PROD, FFT_EUCLIDIAN_PROD, SIMPLE_SCAL_VECT_PROD')
     print()
     print()
     print('============ TO DO ============')
-    print('add divergence, grad for vectors, check read suite, add write suite, fix phys bins')
+    print('grad for vectors, fix phys bins, fix find_duplicates when points are in more than two subdomains, add function for symmetrize on gauss')
 
 def return_cmap():
     import matplotlib as mpl
