@@ -1,7 +1,7 @@
 import numpy as np
+from .SFEMaNS_object import generate_pp_from_vv
 
-
-def write_suite_ns(sfem_par, vv_mesh, pp_mesh,  path_out, field_name="suite_ns_", I=0,
+def write_suite_ns(sfem_par, path_out, vv_mesh, pp_mesh=None, field_name="suite_ns_", I=0,
                    un = None, un_m1 = None, pn = None, pn_m1 = None, incpn = None, incpn_m1 = None):
     """
     function to write a vector field in SFEMaNS suite_ns format
@@ -13,6 +13,9 @@ def write_suite_ns(sfem_par, vv_mesh, pp_mesh,  path_out, field_name="suite_ns_"
     Any unspecified field will be by default set as zero
     
     """
+
+    if pp_mesh is None:
+        pp_mesh = generate_pp_from_vv(vv_mesh)
 
     dummy_pp = np.zeros((pp_mesh.nn, 2, sfem_par.MF), dtype=np.float64)
     dummy_vv = np.zeros((vv_mesh.nn, 6, sfem_par.MF), dtype=np.float64)

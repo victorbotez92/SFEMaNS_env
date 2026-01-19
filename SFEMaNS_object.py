@@ -1,4 +1,6 @@
 import numpy as np
+from einops import rearrange
+
 from pathlib import Path
 
 
@@ -268,39 +270,49 @@ def generate_pp_from_vv(vv_mesh):
     vv_jj_cut = vv_mesh.jj[:3, :]
     vv_jj_cut = rearrange(vv_jj_cut, 'nw me -> (nw me)')
     sort_vv = np.argsort(vv_jj_cut)
-    
+
     new_pp_mesh = define_mesh(vv_mesh.path_to_mesh, 'vv')
-    
+
     sorted_vv_jj = vv_jj_cut[sort_vv]
-    
+    new_pp_nn_per_S = np.empty(vv_mesh.nn_per_S.shape, dtype=np.int32)
     diff_sorted_vv_jj = np.concatenate((np.array([0]), np.diff(sorted_vv_jj)))
+
+    offset = 0
+    for i, elm in enumerate(vv_mesh.nn_per_S):
+
+        mask_vv_in_S = np.logical_and(diff_sorted_vv_jj > 0, np.logical_and(offset <= sorted_vv_jj, sorted_vv_jj < elm+offset))
+        new_pp_nn_per_S[i] = mask_vv_in_S.sum() + (i==0)
+        offset += elm
+
+
     mask_step = diff_sorted_vv_jj!=0
     diff_sorted_vv_jj[mask_step] -= 1
     diff_sorted_vv_jj = np.cumsum(diff_sorted_vv_jj)
     offset_sorted_vv_jj = sorted_vv_jj-diff_sorted_vv_jj
-        
+
     new_pp_jj = np.zeros(vv_jj_cut.shape, dtype=np.int32)
     new_pp_jj[sort_vv] = offset_sorted_vv_jj
     new_pp_jj = rearrange(new_pp_jj, '(nw me) -> nw me', me = vv_mesh.me)
-    
+
     new_pp_R = np.empty(new_pp_jj.max() + 1)
     new_pp_R[new_pp_jj] = vv_mesh.R[vv_mesh.jj[:3, :]]
     new_pp_Z = np.empty(new_pp_jj.max() + 1)
     new_pp_Z[new_pp_jj] = vv_mesh.Z[vv_mesh.jj[:3, :]]
-    
+
     new_pp_mesh.R = new_pp_R
     new_pp_mesh.Z = new_pp_Z
     new_pp_mesh.jj = new_pp_jj
     new_pp_mesh.l_G = 3
     new_pp_mesh.nw = 3
-    
+
     new_pp_mesh.ww = None
     new_pp_mesh.rj = None
     new_pp_mesh.dw = None
-    new_pp_mesh.nn = None
+    new_pp_mesh.nn = np.max(new_pp_mesh.jj) + 1
+    new_pp_mesh.nn_per_S = new_pp_nn_per_S
 
     return new_pp_mesh
-    
+
 
 #==================================================================================
 #==================================================================================

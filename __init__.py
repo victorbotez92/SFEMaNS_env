@@ -21,7 +21,7 @@ print("help_SFEMaNS()/return_cmap()")
 def help_SFEMaNS():
     print('=========Importing/writing data=========')
     print()
-    print('SFEMaNS_par, define_mesh')
+    print('SFEMaNS_par, define_mesh, generate_pp_from_vv')
     print('get_suite, get_phys, get_fourier, get_fourier_per_mode', 'get_mesh_gauss')
     print('write_suite_ns, write_phys, write_fourier, write_fourier_per_mode')
     print()
