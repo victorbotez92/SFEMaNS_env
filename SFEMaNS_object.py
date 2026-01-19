@@ -159,7 +159,7 @@ methods:
         else:
             self.surface = False
 
-    def find_duplicate(self, hmin=1e-5):
+    def find_duplicate(self, hmin=1e-7):
         print("Looking for duplicates in mesh")
     #============== FINDING DUPLICATE INDICES
         indices = []
@@ -262,6 +262,45 @@ methods:
         tab_sym[mask] = alt_tab_sym
         tab_sym[self.tab_duplicates[:, 1]] = tab_sym[self.tab_duplicates[:, 0]]
         self.tab_sym = tab_sym
+
+def generate_pp_from_vv(vv_mesh):
+
+    vv_jj_cut = vv_mesh.jj[:3, :]
+    vv_jj_cut = rearrange(vv_jj_cut, 'nw me -> (nw me)')
+    sort_vv = np.argsort(vv_jj_cut)
+    
+    new_pp_mesh = define_mesh(vv_mesh.path_to_mesh, 'vv')
+    
+    sorted_vv_jj = vv_jj_cut[sort_vv]
+    
+    diff_sorted_vv_jj = np.concatenate((np.array([0]), np.diff(sorted_vv_jj)))
+    mask_step = diff_sorted_vv_jj!=0
+    diff_sorted_vv_jj[mask_step] -= 1
+    diff_sorted_vv_jj = np.cumsum(diff_sorted_vv_jj)
+    offset_sorted_vv_jj = sorted_vv_jj-diff_sorted_vv_jj
+        
+    new_pp_jj = np.zeros(vv_jj_cut.shape, dtype=np.int32)
+    new_pp_jj[sort_vv] = offset_sorted_vv_jj
+    new_pp_jj = rearrange(new_pp_jj, '(nw me) -> nw me', me = vv_mesh.me)
+    
+    new_pp_R = np.empty(new_pp_jj.max() + 1)
+    new_pp_R[new_pp_jj] = vv_mesh.R[vv_mesh.jj[:3, :]]
+    new_pp_Z = np.empty(new_pp_jj.max() + 1)
+    new_pp_Z[new_pp_jj] = vv_mesh.Z[vv_mesh.jj[:3, :]]
+    
+    new_pp_mesh.R = new_pp_R
+    new_pp_mesh.Z = new_pp_Z
+    new_pp_mesh.jj = new_pp_jj
+    new_pp_mesh.l_G = 3
+    new_pp_mesh.nw = 3
+    
+    new_pp_mesh.ww = None
+    new_pp_mesh.rj = None
+    new_pp_mesh.dw = None
+    new_pp_mesh.nn = None
+
+    return new_pp_mesh
+    
 
 #==================================================================================
 #==================================================================================

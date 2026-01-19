@@ -3,7 +3,7 @@ __version__ = "0.2.0"
 
 
 
-from .SFEMaNS_object import SFEMaNS_par, define_mesh, m_family
+from .SFEMaNS_object import SFEMaNS_par, define_mesh, m_family, generate_pp_from_vv
 
 from .operators import gauss_to_nodes, nodes_to_gauss, curl, div, grad, advection_vect, advection_vect_families
 from .solver import solve_laplace
