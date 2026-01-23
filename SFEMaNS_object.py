@@ -1,4 +1,5 @@
 import numpy as np
+from matplotlib.tri import Triangulation
 from einops import rearrange
 
 from pathlib import Path
