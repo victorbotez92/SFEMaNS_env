@@ -79,7 +79,7 @@ methods:
         Z_node = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}mesh_zz_node_S{s:04d}"+mesh_ext) for s in range(S)])
         self.R = R_node
         self.Z = Z_node
-        # self.mesh_type = mesh_type
+# self.mesh_type = mesh_type
 
 #============= DOING jj
 
@@ -91,6 +91,48 @@ methods:
         for s in range(1,S):
             mesh_jj[s]+=cumul_nodes_per_S[s-1]
         mesh_jj = np.hstack(mesh_jj)-1
+        self.jj = mesh_jj
+
+#============ SORTING triangles for plt.tripcolor
+        tri_1 = self.jj.T[:, 3:]
+        tri_2 = self.jj.T[:, np.array([0, 4, 5])]
+        tri_3 = self.jj.T[:, 1::2]
+        tri_4 = self.jj.T[:, 2:5]
+        
+        list_triangles = np.concatenate((tri_1, tri_2, tri_3, tri_4), axis=0)
+        
+        tri_R = self.R[list_triangles]
+        tri_Z = self.Z[list_triangles]
+        
+        vecs_1 = np.zeros((tri_R.shape[0], 2))
+        vecs_1[:, 1] = tri_Z[:, 1] - tri_Z[:, 0]
+        vecs_1[:, 0] = tri_R[:, 1] - tri_R[:, 0]
+        vecs_2 = np.zeros((tri_R.shape[0], 2))
+        vecs_2[:, 1] = tri_Z[:, 2] - tri_Z[:, 0]
+        vecs_2[:, 0] = tri_R[:, 2] - tri_R[:, 0]
+        vec_prod = np.sign(vecs_2[:, 1]*vecs_1[:, 0] - vecs_2[:, 0]*vecs_1[:, 1])
+        
+        perm_1 = np.copy(list_triangles[vec_prod==-1, :][:, 1])
+        perm_2 = np.copy(list_triangles[vec_prod==-1, :][:, 2])
+        list_triangles[vec_prod==-1, 1] = perm_2
+        list_triangles[vec_prod==-1, 2] = perm_1
+        
+        tri = Triangulation(self.R, self.Z, triangles = list_triangles)
+        
+        
+        tri_R = self.R[list_triangles]
+        tri_Z = self.Z[list_triangles]
+        
+        vecs_1 = np.zeros((tri_R.shape[0], 2))
+        vecs_1[:, 1] = tri_Z[:, 1] - tri_Z[:, 0]
+        vecs_1[:, 0] = tri_R[:, 1] - tri_R[:, 0]
+        vecs_2 = np.zeros((tri_R.shape[0], 2))
+        vecs_2[:, 1] = tri_Z[:, 2] - tri_Z[:, 0]
+        vecs_2[:, 0] = tri_R[:, 2] - tri_R[:, 0]
+        
+        vec_prod = np.sign(vecs_2[:, 1]*vecs_1[:, 0] - vecs_2[:, 0]*vecs_1[:, 1])
+        
+        assert (vec_prod==-1).sum()==0, (vec_prod==-1).sum()
 #============== DOING ww
         mesh_ww = np.hstack([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_ww_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(n_w,l_G,order="F") 
                         for s in range(S) ])
@@ -100,12 +142,11 @@ methods:
                 ww_assertion = np.logical_and(ww_assertion, mesh_ww[:,:l_G]==mesh_ww[:,s*l_G:(s+1)*l_G])
             assert np.prod(ww_assertion)
         mesh_ww=mesh_ww[:,:l_G]
+        self.ww = mesh_ww
 #=============== DOING rj
         mesh_rj = np.hstack([ np.fromfile(path_to_mesh+f"/{mesh_type}mesh_gauss_rj_S{s:04d}"+mesh_ext,dtype=np.float64).reshape(l_G,ME[s],order="F") 
                         for s in range(S) ])
         
-        self.jj = mesh_jj
-        self.ww = mesh_ww
         self.rj = mesh_rj
 
         nw, lG, me = mesh_ww.shape[0], mesh_ww.shape[1], mesh_jj.shape[1]
