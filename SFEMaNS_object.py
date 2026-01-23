@@ -119,7 +119,7 @@ methods:
         list_triangles[vec_prod==-1, 2] = perm_1
         
         tri = Triangulation(self.R, self.Z, triangles = list_triangles)
-        
+        self.tri = tri 
         
         tri_R = self.R[list_triangles]
         tri_Z = self.Z[list_triangles]
