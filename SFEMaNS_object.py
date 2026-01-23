@@ -95,13 +95,19 @@ methods:
         self.jj = mesh_jj
 
 #============ SORTING triangles for plt.tripcolor
-        tri_1 = self.jj.T[:, 3:]
-        tri_2 = self.jj.T[:, np.array([0, 4, 5])]
-        tri_3 = self.jj.T[:, 1::2]
-        tri_4 = self.jj.T[:, 2:5]
-        
-        list_triangles = np.concatenate((tri_1, tri_2, tri_3, tri_4), axis=0)
-        
+        if self.jj.shape[0] == 6:
+            tri_1 = self.jj.T[:, 3:]
+            tri_2 = self.jj.T[:, np.array([0, 4, 5])]
+            tri_3 = self.jj.T[:, 1::2]
+            tri_4 = self.jj.T[:, 2:5]
+            
+            list_triangles = np.concatenate((tri_1, tri_2, tri_3, tri_4), axis=0)
+        elif self.jj.shape[0] == 3:
+            list_triangles = np.copy(self.jj.T)
+
+        else:
+            raise TypeError(f'Error in define_mesh triangulation => found unknown Pk decomposition with nb points {self.jj.shape[0]}')
+
         tri_R = self.R[list_triangles]
         tri_Z = self.Z[list_triangles]
         
