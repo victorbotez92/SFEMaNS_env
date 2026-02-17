@@ -36,6 +36,8 @@ def help_SFEMaNS():
     print('FFT_CROSS_PROD, FFT_DOT_PROD, FFT_SCAL_VECT_PROD, FFT_EUCLIDIAN_PROD, SIMPLE_SCAL_VECT_PROD')
     print()
     print()
+    print('========TOOLS========')
+    print('modules => TOOLS/interpol_v5_to_v6.py')
     print('============ TO DO ============')
     print('grad for vectors, fix phys bins, fix find_duplicates when points are in more than two subdomains, add function for symmetrize on gauss')
 
