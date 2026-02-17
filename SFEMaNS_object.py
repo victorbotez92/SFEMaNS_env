@@ -480,9 +480,9 @@ One SFEMaNS parameter can only account for one mesh_type and then one path conta
         for elm_I in tab_I:
             list_MF_per_I = []
             for s in range(self.S):
-                if elm_I != -1:
+                if int(elm_I) != -1:
                     path_I_s = self.path_suites + '/' +  self.name_suites + f"S{s:03d}_" + f"I{elm_I}" + self.mesh_ext
-                elif elm_I == -1:
+                elif int(elm_I) == -1:
                     path_I_s = self.path_suites + '/' +  self.name_suites + f"S{s:03d}" + self.mesh_ext
 
                 with open(path_I_s,'rb') as file:
