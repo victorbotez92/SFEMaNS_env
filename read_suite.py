@@ -134,18 +134,42 @@ def get_data_from_suites(sfem_par,I,mF_to_read,record_stack_lenght=7, opt_extens
         first_offset=7
         nb_components=2
     
-    elif sfem_par.field == "H" :
+    elif sfem_par.field == "H" or sfem_par.field == 'Hn' :
         # suite_kind="suite_maxwell"
         mesh_kind = "H"
         first_offset=2
         nb_components=6
         
-    elif sfem_par.field == "B": 
+    elif sfem_par.field == "Hn_m1":
+        # suite_kind="suite_maxwell"
+        mesh_kind = "H"
+        first_offset=3
+        nb_components=6
+    
+    elif sfem_par.field == "B" or sfem_par.field == 'Bn' :
         # suite_kind="suite_maxwell"
         mesh_kind = "H"
         first_offset=4
         nb_components=6
         
+    elif sfem_par.field == "Bn_m1":
+        # suite_kind="suite_maxwell"
+        mesh_kind = "H"
+        first_offset=5
+        nb_components=6
+
+    elif sfem_par.field == "phi" or sfem_par.field == 'phin' :
+        # suite_kind="suite_maxwell"
+        mesh_kind = "phi"
+        first_offset=6
+        nb_components=2
+        
+    elif sfem_par.field == "phin_m1":
+        # suite_kind="suite_maxwell"
+        mesh_kind = "phi"
+        first_offset=7
+        nb_components=2
+
     else:
         print("Field ",sfem_par.field," not found, or not implemented")
         return
@@ -164,7 +188,7 @@ def get_data_from_suites(sfem_par,I,mF_to_read,record_stack_lenght=7, opt_extens
         data_compute_nn = read_in_suite(suite_name, 0, first_offset, nb_components, record_stack_lenght)
         nnodes.append(data_compute_nn.shape[0])
     nnodes = np.asarray(nnodes)
-
+    print(nnodes)
     field_out = np.zeros((nnodes.sum(), nb_components, mF_to_read.max()+1))
     n_inf = 0
     for s in range(sfem_par.S):
@@ -173,7 +197,6 @@ def get_data_from_suites(sfem_par,I,mF_to_read,record_stack_lenght=7, opt_extens
         for mF in mF_to_read:
             field_out[n_inf:n_sup, :, mF] = read_in_suite(suite_name, mF, first_offset, nb_components, record_stack_lenght)
         n_inf = n_sup
-
     return field_out
 
 def get_suite(sfem_par,I,MF=None,record_stack_lenght=7, get_gauss_points=False,stack_domains=True, opt_time=False):
@@ -196,7 +219,8 @@ def get_suite(sfem_par,I,MF=None,record_stack_lenght=7, get_gauss_points=False,s
             record_length = np.frombuffer(record_length_bytes, dtype=np.int32)[0]
             num_elements = record_length // 8
             time = np.fromfile(file,dtype=np.float64,count=num_elements)[0]
-
+    else:
+        time = 0.0
     f_out = []
     for i in I:
         f_out.append(get_data_from_suites(sfem_par,i,MF,record_stack_lenght=record_stack_lenght))
