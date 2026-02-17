@@ -431,8 +431,10 @@ One SFEMaNS parameter can only account for one mesh_type and then one path conta
         self.path_to_mesh = path_to_mesh
         self.mesh_ext = mesh_ext
         self.mesh_type = mesh_type
-
+        self.MF = None
     def add_suite_ns(self, path_suites, name_suites="suite_ns_", field=None, D=None, replace = False):
+        type_vv = ['u', 'un', 'un_m1']
+        type_pp = ['p', 'pn', 'pn_m1', 'incp', 'incpn', 'incpn_m1']
         if self.bins == True:
             raise Exception("your SFEMaNS parameter does already contain information about binaries, please create a new one for suites")
         if self.suites == True:
@@ -442,14 +444,14 @@ One SFEMaNS parameter can only account for one mesh_type and then one path conta
             raise TypeError(f"SFEMaNS object is on {self.mesh_type} while ns-like suite requires pp or vv")
         if field is None:
             if self.mesh_type == "vv":
-                field = input(f"on {self.mesh_type}, possibilities are u, um1")
-                if not field in ["u", "um1"]:
-                    raise NameError(f"Choose your field in ['u', 'um1']")
+                field = input(f"on {self.mesh_type}, possibilities are {type_vv}")
+                if not field in type_vv:
+                    raise NameError(f"Choose your field in {type_vv}")
                 d = 3
             elif self.mesh_type == "pp":
-                field = input(f"on {self.mesh_type}, possibilities are p, pm1")
-                if not field in ["p", "pm1"]:
-                    raise NameError(f"Choose your field in ['p', 'pm1']")
+                field = input(f"on {self.mesh_type}, possibilities are {type_pp}")
+                if not field in type_pp:
+                    raise NameError(f"Choose your field in {type_pp}")
                 d = 1
 
             if (not D is None) and d != D:

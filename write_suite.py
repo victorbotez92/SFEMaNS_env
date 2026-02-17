@@ -1,8 +1,9 @@
 import numpy as np
 from .SFEMaNS_object import generate_pp_from_vv
 
-def write_suite_ns(sfem_par, path_out, vv_mesh, pp_mesh=None, field_name="suite_ns_", I=0,
-                   un = None, un_m1 = None, pn = None, pn_m1 = None, incpn = None, incpn_m1 = None):
+def write_suite_ns(sfem_par, path_out, vv_mesh=None, pp_mesh=None, field_name="suite_ns_", I=0,
+                   un = None, un_m1 = None, pn = None, pn_m1 = None, incpn = None, incpn_m1 = None,
+                   opt_time = None):
     """
     function to write a vector field in SFEMaNS suite_ns format
     Necessarily takes as argument the field itself on nodes and in Fourier space
@@ -14,11 +15,37 @@ def write_suite_ns(sfem_par, path_out, vv_mesh, pp_mesh=None, field_name="suite_
     
     """
 
+    if vv_mesh is None:
+        raise ValueError('in write_suite_ns: please at least have vv_mesh as parameter')
+
     if pp_mesh is None:
         pp_mesh = generate_pp_from_vv(vv_mesh)
 
-    dummy_pp = np.zeros((pp_mesh.nn, 2, sfem_par.MF), dtype=np.float64)
-    dummy_vv = np.zeros((vv_mesh.nn, 6, sfem_par.MF), dtype=np.float64)
+    list_MF = []
+
+    if not (un is None):
+        list_MF.append(un.shape[-1])
+    if not (un_m1 is None):
+        list_MF.append(un_m1.shape[-1])
+    if not (pn is None):
+        list_MF.append(pn.shape[-1])
+    if not (pn_m1 is None):
+        list_MF.append(pn_m1.shape[-1])
+    if not (incpn is None):
+        list_MF.append(incpn.shape[-1])
+    if not (incpn_m1 is None):
+        list_MF.append(incpn_m1.shape[-1])
+    list_MF = np.asarray(list_MF)
+    if len(list_MF) == 0:
+        raise IndexError("in write_suite: no suite specified for writing")
+    elif list_MF.std() != 0:
+        print(f"WARNING in write_suite: some of the fields have different number of Fourier modes, restraining to mF = {list_MF.min()}")
+    mF_max = list_MF.min()
+    if sfem_par.MF is None:
+        sfem_par.MF = mF_max
+
+    dummy_pp = np.zeros((pp_mesh.nn, 2, mF_max), dtype=np.float64)
+    dummy_vv = np.zeros((vv_mesh.nn, 6, mF_max), dtype=np.float64)
     
     if un is None:
         un = dummy_vv
@@ -32,7 +59,11 @@ def write_suite_ns(sfem_par, path_out, vv_mesh, pp_mesh=None, field_name="suite_
         incpn = dummy_pp
     if incpn_m1 is None:
         incpn_m1 = dummy_pp
-    
+    if opt_time is None:
+        time = 0
+    else:
+        time = opt_time
+
     n_inf_vv = 0
     n_inf_pp = 0
 
@@ -68,13 +99,16 @@ def write_suite_ns(sfem_par, path_out, vv_mesh, pp_mesh=None, field_name="suite_
 
             record_length = 8 + 4 + 4 + 4  # float64 (8 bytes) + 3×int32 (12 bytes)
             file.write(np.int32(record_length).tobytes())
-            file.write(np.float64(0).tobytes())
+            file.write(np.float64(opt_time).tobytes())
+            #file.write(np.float64(0).tobytes())
             file.write(np.int32(sfem_par.S).tobytes())
-            file.write(np.int32(sfem_par.MF).tobytes())
+            file.write(np.int32(mF_max).tobytes())
+            #file.write(np.int32(sfem_par.MF).tobytes())
             file.write(np.int32(1).tobytes())
             file.write(np.int32(record_length).tobytes())
             
-            for mF in range(sfem_par.MF):
+            for mF in range(mF_max):
+            #for mF in range(sfem_par.MF):
                 #print("Writing mF=", mF)
     
                 record_length = 4  # int32 (4 bytes)

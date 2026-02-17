@@ -98,18 +98,42 @@ def get_data_from_suites(sfem_par,I,mF_to_read,record_stack_lenght=7, opt_extens
 
 
     # select between suite_ns and suite_maxwell
-    if sfem_par.field == "u":
+    if sfem_par.field == "u" or sfem_par.fielsd == 'un':
         # suite_kind="suite_ns"#f"{opt_extension}ns"
         mesh_kind = "vv"
         first_offset=2
         nb_components=6
         
-    elif sfem_par.field == "p" :
+    elif sfem_par.field == "un_m1":
+        # suite_kind="suite_ns"#f"{opt_extension}ns"
+        mesh_kind = "vv"
+        first_offset=3
+        nb_components=6
+
+    elif sfem_par.field == "p" or sfem_par.field == 'pn':
         # suite_kind="suite_ns"
         mesh_kind = "pp"
         first_offset=4
         nb_components=2
         
+    elif sfem_par.field == "pn_m1" :
+        # suite_kind="suite_ns"
+        mesh_kind = "pp"
+        first_offset=5
+        nb_components=2
+    
+    elif sfem_par.field == "incp" or sfem_par.field == 'incpn':
+        # suite_kind="suite_ns"
+        mesh_kind = "pp"
+        first_offset=6
+        nb_components=2
+    
+    elif sfem_par.field == "incpn_m1" :
+        # suite_kind="suite_ns"
+        mesh_kind = "pp"
+        first_offset=7
+        nb_components=2
+    
     elif sfem_par.field == "H" :
         # suite_kind="suite_maxwell"
         mesh_kind = "H"
@@ -152,7 +176,8 @@ def get_data_from_suites(sfem_par,I,mF_to_read,record_stack_lenght=7, opt_extens
 
     return field_out
 
-def get_suite(sfem_par,I,MF=None,record_stack_lenght=7, get_gauss_points=False,stack_domains=True):
+def get_suite(sfem_par,I,MF=None,record_stack_lenght=7, get_gauss_points=False,stack_domains=True, opt_time=False):
+    
     if isinstance(I, int):
         I = [I]
     if MF is None:
@@ -160,10 +185,21 @@ def get_suite(sfem_par,I,MF=None,record_stack_lenght=7, get_gauss_points=False,s
     elif isinstance(MF, int):
         print(f'WARNING: you chose to import only mF = {MF}, be sure it is defined/what you wanted to do')
         MF = [MF]
-    
+    if opt_time:
+        if I[0] == -1:
+            add_str = ''
+        else:
+            add_str = f'_I{I[0]:03d}'
+        path_to_read = sfem_par.path_suites+'/'+f'{sfem_par.name_suites}S001{add_str}{sfem_par.mesh_ext}'
+        with open(path_to_read,'rb') as file:
+            record_length_bytes = file.read(4)
+            record_length = np.frombuffer(record_length_bytes, dtype=np.int32)[0]
+            num_elements = record_length // 8
+            time = np.fromfile(file,dtype=np.float64,count=num_elements)[0]
+
     f_out = []
     for i in I:
         f_out.append(get_data_from_suites(sfem_par,i,MF,record_stack_lenght=record_stack_lenght))
     
     f_out = np.asarray(f_out)
-    return f_out
+    return time, f_out
