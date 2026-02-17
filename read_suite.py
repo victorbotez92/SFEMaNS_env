@@ -98,7 +98,7 @@ def get_data_from_suites(sfem_par,I,mF_to_read,record_stack_lenght=7, opt_extens
 
 
     # select between suite_ns and suite_maxwell
-    if sfem_par.field == "u" or sfem_par.fielsd == 'un':
+    if sfem_par.field == "u" or sfem_par.field == 'un':
         # suite_kind="suite_ns"#f"{opt_extension}ns"
         mesh_kind = "vv"
         first_offset=2
