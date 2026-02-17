@@ -13,10 +13,10 @@ When running this module, the user needs to give two paths as arguments:
 import numpy as np
 import matplotlib.pyplot as plt
 
-from einops import rearrange, einsum
-
 import sys, os
-sys.path.append('/people/botez/post_pro_sfemans')
+cur_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(cur_path+'/../..')
+
 from SFEMaNS_env import *
 cmap = return_cmap()
 
@@ -38,7 +38,7 @@ def make_plot(field, path_out, mesh, title):
                 im = ax[d, a].tripcolor(mesh.tri, field[:, 2*d + a, 0], cmap = cmap)
                 fig.colorbar(im, ax=ax[d, a], orientation='vertical')
     fig.tight_layout()
-    plt.savefig(path_out+title+'.png')
+    plt.savefig(path_out+'/'+title+'.png')
     plt.close()
 
 #================================
