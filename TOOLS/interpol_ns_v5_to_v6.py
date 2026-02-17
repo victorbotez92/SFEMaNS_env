@@ -136,7 +136,7 @@ for char_p in list_char_p:
 #============ Writing suite =======
 #==================================
 
-write_suite_ns(sfem_out_vv, path_v6, mesh_out_vv, I=10, un=dict_field['un'], un_m1=dict_field['un_m1'],
+write_suite_ns(sfem_out_vv, path_v6, mesh_out_vv, I=I, un=dict_field['un'], un_m1=dict_field['un_m1'],
                pn=dict_field['pn'], pn_m1=dict_field['pn_m1'], incpn=dict_field['incpn'], incpn_m1=dict_field['incpn_m1'], 
                opt_time = time)
 
