@@ -695,8 +695,7 @@ One SFEMaNS parameter can only account for one mesh_type and then one path conta
         phys = len([file.name for file in Path(f"{path_binaries}/").iterdir() if (search_string in file.name) and (field in file.name)])>0
         
         search_string_1 = "fourier_"
-        search_string_2 = "_S0000_F0000"
-        #search_string_2 = "c_S0000_F0000"
+        search_string_2 = "_S0000_F"
         fourier_per_mode = len([file.name for file in Path(f"{path_binaries}/").iterdir() if ((search_string_1 in file.name) and (search_string_2 in file.name) and (field in file.name) and (self.mesh_ext in file.name))])>0
         
         search_string_1 = "fourier_"
@@ -783,6 +782,7 @@ One SFEMaNS parameter can only account for one mesh_type and then one path conta
                 N = len(np.fromfile(self.path_to_mesh+f"/{self.mesh_type}mesh_gauss_rj_S0000"+self.mesh_ext))
             else:
                 N = len(np.fromfile(self.path_to_mesh+f"/{self.mesh_type}mesh_rr_node_S0000"+self.mesh_ext))
+            tab_mF = list(set([int(elm.split(search_string_1)[1].split(search_string_2)[1].split(self.mesh_ext)[0]) for elm in matching_files]))
             #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}mesh_gauss_rj_S0000{self.mesh_ext}'))
             #N = len(np.fromfile(self.path_to_mesh+f'{self.mesh_type}rr_S0000{self.mesh_ext}'))
             #if D == 3:
@@ -790,7 +790,7 @@ One SFEMaNS parameter can only account for one mesh_type and then one path conta
             #elif D == 1:
             #    char = ''
             #directory = f'{path_binaries}/fourier_{field}{char}c_S0000_F0000{self.mesh_ext}'
-            directory = f'{path_binaries}/fourier_{field}_S0000_F0000{self.mesh_ext}'
+            directory = f'{path_binaries}/fourier_{field}_S0000_F{tab_mF[0]:04d}{self.mesh_ext}'
             mode = np.fromfile(directory)
             nb_I = len(mode)//N//D//2
             #nb_I = len(mode)//N
