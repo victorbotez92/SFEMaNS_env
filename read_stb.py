@@ -28,6 +28,22 @@ def get_mesh_gauss(par,opt_mesh = None):
         W = np.hstack([np.fromfile(par.path_to_mesh+f"/{par.mesh_type}weight_S{s:04d}"+par.mesh_ext) for s in range(par.S)]).reshape(-1)
     return R,Z,W
 
+def build_tab_sym_gauss(R, Z):
+
+    partial_sort = np.argsort(R**3+Z**2)
+
+    flip_partial_sort = np.copy(partial_sort)
+    restriction_z_is_not_0 = np.zeros(partial_sort.shape[0], dtype=np.int32)
+
+    flip_partial_sort[1::2] = partial_sort[::2]
+    flip_partial_sort[::2] = partial_sort[1::2]
+
+    inverse_partial_sort = np.empty(partial_sort.shape[0],dtype=np.int32)
+    inverse_partial_sort[partial_sort] = np.arange(partial_sort.shape[0])
+
+    tab_sym = flip_partial_sort[inverse_partial_sort]
+    return tab_sym
+
 #==============Elementary functions for getting data
 def get_size(path):
     with open(path, 'rb') as fin:
